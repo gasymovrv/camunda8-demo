@@ -1,0 +1,45 @@
+### Create instance of process-with-reusable-call-activity.bpmn
+POST http://localhost:8080/processes
+Content-Type: application/json
+
+{
+  "bpmnProcessId": "process-with-reusable-call-activity",
+  "vars": {
+    "key": "01",
+    "var1": "TWO"
+  }
+}
+
+### Send message 'MsgCreateNewSimpleProcess'
+POST http://localhost:8080/messages
+Content-Type: application/json
+
+{
+  "msgName": "MsgCreateNewSimpleProcess",
+  "correlationKey": "01",
+  "vars": {
+    "var1": "ONE"
+  }
+}
+
+### Send message 'MsgSimpleProcessEvent'
+POST http://localhost:8080/messages
+Content-Type: application/json
+
+{
+  "msgName": "MsgSimpleProcessEvent",
+  "correlationKey": "01",
+  "vars": {
+  }
+}
+
+### Send message 'MsgCompleteMainProcess'
+POST http://localhost:8080/messages
+Content-Type: application/json
+
+{
+  "msgName": "MsgCompleteMainProcess",
+  "correlationKey": "01",
+  "vars": {
+  }
+}
