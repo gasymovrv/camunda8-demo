@@ -1,0 +1,33 @@
+# https://docs.camunda.io/docs/self-managed/operate-deployment/configuration/
+server:
+  port: 8082
+
+camunda.operate:
+  # Set operate userId, displayName and password.
+  # If user with <userId> does not exists it will be created.
+  # Default: demo/demo/demo
+  userId: demo
+  displayName: demo
+  password: demo
+  roles:
+    - OWNER
+    - USER
+
+  # Zeebe instance
+  zeebe:
+    # Gateway address to zeebe
+    gatewayAddress: zeebe:26500
+    brokerContactPoint: zeebe:26500
+
+  elasticsearch:
+    # Cluster name
+    clusterName: elasticsearch
+    url: http://elasticsearch:9200
+
+  # ELS instance to export Zeebe data to
+  zeebeElasticsearch:
+    # Cluster name
+    clusterName: elasticsearch
+    url: http://elasticsearch:9200
+    # Index prefix, configured in Zeebe Elasticsearch exporter
+    prefix: zeebe-record

@@ -1,0 +1,11 @@
+zeebe:
+  client:
+    security:
+      plaintext: true
+    broker:
+      gateway-address: localhost:26500
+
+springdoc:
+  swagger-ui:
+    enabled: ${ENABLE_SWAGGER:true}
+    path: /swagger-ui

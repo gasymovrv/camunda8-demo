@@ -1,0 +1,23 @@
+### Create instance of embedded-process.bpmn
+POST http://localhost:8080/processes
+Content-Type: application/json
+
+{
+  "bpmnProcessId": "process-with-embedded-subprocess",
+  "vars": {
+    "registration_message": "TWO",
+    "key": "02"
+  }
+}
+
+### Send message 'MsgEmdeddedEnd'
+POST http://localhost:8080/messages
+Content-Type: application/json
+
+{
+  "msgName": "MsgEmbeddedEnd",
+  "correlationKey": "02",
+  "vars": {
+    "additionalProp1": {"name": "name"}
+  }
+}

@@ -1,0 +1,35 @@
+### Create instance of process-with-call-activity.bpmn
+POST http://localhost:8080/processes
+Content-Type: application/json
+
+{
+  "bpmnProcessId": "process-with-event-subprocess",
+  "vars": {
+    "key": "05",
+    "registration_message": "TWO"
+  }
+}
+
+### Send message 'MsgStartCallActivity'
+POST http://localhost:8080/messages
+Content-Type: application/json
+
+{
+  "msgName": "MsgStartEventSubprocess",
+  "correlationKey": "05",
+  "vars": {
+    "key": "05-01"
+  }
+}
+
+### Send message 'MsgSimpleProcessEvent'
+POST http://localhost:8080/messages
+Content-Type: application/json
+
+{
+  "msgName": "MsgSimpleProcessEvent",
+  "correlationKey": "05-01",
+  "vars": {
+    "simple_process_var": "simple process var 05-01"
+  }
+}

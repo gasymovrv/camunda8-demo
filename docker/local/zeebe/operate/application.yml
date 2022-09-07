@@ -1,0 +1,13 @@
+zeebe:
+  broker:
+    exporters:
+      # https://github.com/camunda/zeebe/tree/main/exporters/elasticsearch-exporter
+      elasticsearch:
+        className: io.camunda.zeebe.exporter.ElasticsearchExporter
+        args:
+          # A comma separated list of URLs pointing to the Elasticsearch instances you wish to export to.
+          # For example, if you want to connect to multiple nodes for redundancy:
+          # url: http://localhost:9200,http://localhost:9201
+          url: http://elasticsearch:9200
+          index:
+            prefix: zeebe-record

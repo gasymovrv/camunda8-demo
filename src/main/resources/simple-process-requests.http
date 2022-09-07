@@ -1,0 +1,23 @@
+### Create instance of simple-process.bpmn
+POST http://localhost:8080/processes
+Content-Type: application/json
+
+{
+  "bpmnProcessId": "simple-process",
+  "vars": {
+    "registration_message": "TWO",
+    "key": "01"
+  }
+}
+
+### Send message 'MsgSimpleProcessEvent'
+POST http://localhost:8080/messages
+Content-Type: application/json
+
+{
+  "msgName": "MsgSimpleProcessEvent",
+  "correlationKey": "01",
+  "vars": {
+    "additionalProp1": {"name": "name"}
+  }
+}
