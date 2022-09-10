@@ -1,0 +1,34 @@
+zeebe:
+#  standalone:
+#    gateway: true
+#  gateway:
+#    network:
+#      host: 0.0.0.0
+#      port: 26500
+#    cluster:
+#      contactPoint: node0:26502
+#      host: gateway
+#      port: 26502
+  broker:
+    exporters:
+      hazelcast:
+        className: io.zeebe.hazelcast.exporter.HazelcastExporter
+        jarPath: exporters/zeebe-hazelcast-exporter.jar
+        args:
+          # remote Hazelcast address
+          remoteAddress: hazelcast:5701
+
+          # Hazelcast cluster name
+          clusterName: dev
+
+#          # connection timeout
+          remoteConnectionTimeout: "PT30S"
+#    gateway:
+#      enable: false
+    cluster:
+#      nodeId: 0
+      clusterSize: 2
+      replicationFactor: 2
+      partitionsCount: 20
+      initialContactPoints: [node0:26502,node1:26502]
+

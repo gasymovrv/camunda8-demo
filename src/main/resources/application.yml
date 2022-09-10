@@ -4,6 +4,9 @@ zeebe:
       plaintext: true
     broker:
       gateway-address: localhost:26500
+    worker:
+      max-jobs-active: 32
+      threads: ${MAX_ZEEBE_THREADS:16}
 
 springdoc:
   swagger-ui:
