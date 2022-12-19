@@ -28,9 +28,7 @@ Content-Type: application/json
 
 {
   "msgName": "MsgSimpleProcessEvent",
-  "correlationKey": "01",
-  "vars": {
-  }
+  "correlationKey": "01"
 }
 
 ### Send message 'MsgCompleteMainProcess'
@@ -39,7 +37,5 @@ Content-Type: application/json
 
 {
   "msgName": "MsgCompleteMainProcess",
-  "correlationKey": "01",
-  "vars": {
-  }
+  "correlationKey": "01"
 }

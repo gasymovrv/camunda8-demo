@@ -3,7 +3,7 @@ services:
 
   zeebe:
     container_name: zeebe_broker
-    image: camunda/zeebe:8.0.3
+    image: camunda/zeebe:8.1.4
     environment:
       - ZEEBE_LOG_LEVEL=debug
       - ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT=5
@@ -20,7 +20,7 @@ services:
 
   elasticsearch:
     container_name: elasticsearch
-    image: docker.art.lmru.tech/elasticsearch/elasticsearch:7.17.0
+    image: elasticsearch:8.5.3
     ports:
       - "9200:9200"
       - "9300:9300"

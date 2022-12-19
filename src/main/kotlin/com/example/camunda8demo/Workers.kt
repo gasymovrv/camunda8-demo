@@ -2,7 +2,7 @@ package com.example.camunda8demo
 
 import io.camunda.zeebe.client.api.response.ActivatedJob
 import io.camunda.zeebe.client.api.worker.JobClient
-import io.camunda.zeebe.spring.client.annotation.ZeebeWorker
+import io.camunda.zeebe.spring.client.annotation.JobWorker
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
@@ -13,21 +13,21 @@ import org.springframework.stereotype.Component
 class Workers {
     val log: Logger = LoggerFactory.getLogger(javaClass)
 
-    @ZeebeWorker(type = "simple_task1", autoComplete = true)
+    @JobWorker(type = "simple_task1", autoComplete = true)
     fun handleSimpleTask1(job: ActivatedJob) {
         println("execute simple_task 1...")
         job.print()
         println("----- finish simple_task1 -----\n")
     }
 
-    @ZeebeWorker(type = "simple_task2", autoComplete = true)
+    @JobWorker(type = "simple_task2", autoComplete = true)
     fun handleSimpleTask2(job: ActivatedJob) {
         println("execute simple_task 2...")
         job.print()
         println("----- finish simple_task2 -----\n")
     }
 
-    @ZeebeWorker(type = "retryable_task")
+    @JobWorker(type = "retryable_task", autoComplete = false)
     fun handleRetryableTask(jobClient: JobClient, job: ActivatedJob) = runBlocking {
         log.info("=============== execute retryable_task, instance: ${job.processInstanceKey} ==================")
         if (job.retries > 1) { // emulate fails
@@ -49,7 +49,7 @@ class Workers {
         log.info("=============== finish retryable_task, instance: ${job.processInstanceKey} ==================")
     }
 
-    @ZeebeWorker(type = "long_task", autoComplete = true)
+    @JobWorker(type = "long_task", autoComplete = true)
     fun handleLongTask(job: ActivatedJob) {
         println("execute long_task...")
         Thread.sleep(60000)

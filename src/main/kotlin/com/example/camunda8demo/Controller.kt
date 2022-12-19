@@ -19,7 +19,7 @@ class Controller(@Qualifier("zeebeClientLifecycle") private val zeebe: ZeebeClie
         return zeebe.newCreateInstanceCommand()
             .bpmnProcessId(bpmnProcessId)
             .latestVersion()
-            .variables(vars)
+            .variables(vars ?: mapOf())
             .send()
             .thenApply {
                 println("Instance created. Key: ${it.processInstanceKey}")
@@ -29,14 +29,17 @@ class Controller(@Qualifier("zeebeClientLifecycle") private val zeebe: ZeebeClie
 
     @PostMapping("/messages")
     fun sendMessage(@RequestBody msgRequest: SendMessageRequest): CompletionStage<PublishMessageResponse> {
-        val (msgName, correlationKey, vars) = msgRequest
+        val (msgName, correlationKey, messageId, vars) = msgRequest
 
-        return zeebe.newPublishMessageCommand()
+        val command = zeebe.newPublishMessageCommand()
             .messageName(msgName) // to link with message catch event by its name
             .correlationKey(correlationKey) // to link with message catch event by correlationKey
-            //.messageId(correlationKey) // a unique id to ensure the message is published and processed only once (among the same messageName)
-            .variables(vars)
-            .send()
+            .variables(vars ?: mapOf())
+        if (messageId != null) {
+            command.messageId(messageId) // a unique id to ensure the message is published and processed only once (among the same messageName)
+        }
+
+        return command.send()
             .thenApply {
                 println("Message '$msgName' sent. CorrelationKey: $correlationKey, messageKey: ${it.messageKey}")
                 it
@@ -46,11 +49,12 @@ class Controller(@Qualifier("zeebeClientLifecycle") private val zeebe: ZeebeClie
 
 data class CreateInstanceRequest(
     val bpmnProcessId: String,
-    val vars: Map<String, Any?>
+    val vars: Map<String, Any?>? = null
 )
 
 data class SendMessageRequest(
     val msgName: String,
     val correlationKey: String,
-    val vars: Map<String, Any?>
+    val messageId: String? = null,
+    val vars: Map<String, Any?>? = null
 )
