@@ -6,7 +6,7 @@ services:
     image: camunda/zeebe:8.1.4
     environment:
       - ZEEBE_LOG_LEVEL=debug
-      - ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT=5
+      - ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT=15
     ports:
       - "26500:26500"
       - "9600:9600"
@@ -20,7 +20,7 @@ services:
 
   elasticsearch:
     container_name: elasticsearch
-    image: elasticsearch:8.5.3
+    image: elasticsearch:7.17.5
     ports:
       - "9200:9200"
       - "9300:9300"
