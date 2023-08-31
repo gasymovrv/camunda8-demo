@@ -1,4 +1,16 @@
 ### Create instance of embedded-process.bpmn
+< {%
+    function getNextKey() {
+        let previous = client.global.get('key2')
+        if (previous == null) {
+            return "1"
+        } else {
+            let newKey = parseInt(previous)
+            return (++newKey).toFixed(0)
+        }
+    }
+    client.global.set('key2', getNextKey())
+%}
 POST http://localhost:8080/processes
 Content-Type: application/json
 
@@ -6,7 +18,7 @@ Content-Type: application/json
   "bpmnProcessId": "process-with-embedded-subprocess",
   "vars": {
     "registration_message": "TWO",
-    "key": "02"
+    "key": "{{key2}}"
   }
 }
 
@@ -16,7 +28,7 @@ Content-Type: application/json
 
 {
   "msgName": "MsgEmbeddedEnd",
-  "correlationKey": "02",
+  "correlationKey": "{{key2}}",
   "vars": {
     "additionalProp1": {"name": "name"}
   }

@@ -1,11 +1,23 @@
 ### Create instance of process-with-reusable-call-activity.bpmn
+< {%
+    function getNextKey() {
+        let previous = client.global.get('key1')
+        if (previous == null) {
+            return "1"
+        } else {
+            let newKey = parseInt(previous)
+            return (++newKey).toFixed(0)
+        }
+    }
+    client.global.set('key1', getNextKey())
+%}
 POST http://localhost:8080/processes
 Content-Type: application/json
 
 {
   "bpmnProcessId": "process-with-reusable-call-activity",
   "vars": {
-    "key": "01",
+    "key": "{{key1}}",
     "var1": "TWO"
   }
 }
@@ -16,7 +28,7 @@ Content-Type: application/json
 
 {
   "msgName": "MsgCreateNewSimpleProcess",
-  "correlationKey": "01",
+  "correlationKey": "{{key1}}",
   "vars": {
     "var1": "ONE"
   }
@@ -28,7 +40,7 @@ Content-Type: application/json
 
 {
   "msgName": "MsgSimpleProcessEvent",
-  "correlationKey": "01"
+  "correlationKey": "{{key1}}"
 }
 
 ### Send message 'MsgCompleteMainProcess'
@@ -37,5 +49,5 @@ Content-Type: application/json
 
 {
   "msgName": "MsgCompleteMainProcess",
-  "correlationKey": "01"
+  "correlationKey": "{{key1}}"
 }

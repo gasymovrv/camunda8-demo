@@ -1,11 +1,23 @@
 ### Create instance of process-with-call-activity.bpmn
+< {%
+    function getNextKey() {
+        let previous = client.global.get('key5')
+        if (previous == null) {
+            return "1"
+        } else {
+            let newKey = parseInt(previous)
+            return (++newKey).toFixed(0)
+        }
+    }
+    client.global.set('key5', getNextKey())
+%}
 POST http://localhost:8080/processes
 Content-Type: application/json
 
 {
   "bpmnProcessId": "process-with-event-subprocess",
   "vars": {
-    "key": "05",
+    "key": "{{key5}}",
     "registration_message": "TWO"
   }
 }
@@ -16,9 +28,9 @@ Content-Type: application/json
 
 {
   "msgName": "MsgStartEventSubprocess",
-  "correlationKey": "05",
+  "correlationKey": "{{key5}}",
   "vars": {
-    "key": "05-01"
+    "key": "{{key5}}-01"
   }
 }
 
@@ -28,7 +40,7 @@ Content-Type: application/json
 
 {
   "msgName": "MsgSimpleProcessEvent",
-  "correlationKey": "05-01",
+  "correlationKey": "{{key5}}-01",
   "vars": {
     "simple_process_var": "simple process var 05-01"
   }
