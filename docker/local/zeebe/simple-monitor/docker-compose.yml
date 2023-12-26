@@ -3,7 +3,7 @@ version: "3"
 services:
   zeebe:
     container_name: zeebe_broker
-    image: camunda/zeebe:8.1.4
+    image: camunda/zeebe:8.2.5
     environment:
       - ZEEBE_LOG_LEVEL=debug
       - ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT=8
@@ -19,7 +19,7 @@ services:
 
   simple-monitor-in-memory:
     container_name: zeebe-simple-monitor-in-memory
-    image: ghcr.io/camunda-community-hub/zeebe-simple-monitor:2.3.0
+    image: ghcr.io/camunda-community-hub/zeebe-simple-monitor:2.5.2
     environment:
       - zeebe.client.broker.gateway-address=zeebe:26500
       - zeebe.client.worker.hazelcast.connection=zeebe:5701

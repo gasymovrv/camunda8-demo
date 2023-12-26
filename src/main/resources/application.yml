@@ -1,3 +1,6 @@
+server:
+  port: 8080
+
 zeebe:
   client:
     security:
@@ -5,8 +8,21 @@ zeebe:
     broker:
       gateway-address: localhost:26500
     worker:
-      max-jobs-active: 32
-      threads: ${MAX_ZEEBE_THREADS:16}
+      # For example, imagine you have 10 process instances and a single job worker configured with maxJobsActive = 3.
+      # The job worker will first pull three jobs and begin executing them. The threshold to poll for new jobs is 1 (30% of 3 rounded up).
+      # After two jobs have completed, the threshold is reached and the job worker will poll for up to 2 additional jobs.
+      # This process repeats until the jobs from all 10 process instances have been completed.
+      max-jobs-active: 16
+      threads: 16
+    job:
+      # Set the time for how long a job is exclusively assigned for this worker.
+      # In this time, the job can not be assigned by other workers to ensure that only one worker work on the job.
+      # When the time is over then the job can be assigned again by this or other worker if it's not completed yet.
+      # If no timeout is set, then the default is used from the configuration.
+      timeout: 5m
+    # Set the request timeout for activate job request used to poll for new job.
+    # If no request timeout is set then the default is used from the ZeebeClientConfiguration
+    request-timeout: 10s
 
 springdoc:
   swagger-ui:

@@ -1,30 +1,36 @@
 package com.example.camunda8demo
 
+import com.example.camunda8demo.util.ZeebeJobUtils
 import io.camunda.zeebe.client.api.response.ActivatedJob
 import io.camunda.zeebe.client.api.worker.JobClient
 import io.camunda.zeebe.spring.client.annotation.JobWorker
+import io.camunda.zeebe.spring.client.annotation.VariablesAsType
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Component
 class Workers {
     val log: Logger = LoggerFactory.getLogger(javaClass)
 
-    @JobWorker(type = "simple_task1", autoComplete = true)
-    fun handleSimpleTask1(job: ActivatedJob) {
-        println("execute simple_task 1...")
+    @JobWorker(type = "simple_task1", autoComplete = false)
+    fun handleSimpleTask1(jobClient: JobClient, job: ActivatedJob, @VariablesAsType vars: Vars) {
+        log.info("=============== execute simple_task1, key=${vars.key}...")
         job.print()
-        println("----- finish simple_task1 -----\n")
+        ZeebeJobUtils.sendCompleteJob(jobClient, job, vars)
     }
 
     @JobWorker(type = "simple_task2", autoComplete = true)
     fun handleSimpleTask2(job: ActivatedJob) {
-        println("execute simple_task 2...")
+        log.info("=============== execute simple_task2...")
         job.print()
-        println("----- finish simple_task2 -----\n")
+        log.info("=============== finish simple_task2 -----\n")
     }
 
     @JobWorker(type = "retryable_task", autoComplete = false)
@@ -42,18 +48,25 @@ class Workers {
                     log.info("instance '${job.processInstanceKey}' - failed attempt, remain attempts: $remainAttempts")
                 }
         } else {
-            jobClient.newCompleteCommand(job)
-                .send()
-                .whenComplete { _, err -> callBack(job, err) }
+            ZeebeJobUtils.sendCompleteJob(jobClient, job)
         }
         log.info("=============== finish retryable_task, instance: ${job.processInstanceKey} ==================")
     }
 
-    @JobWorker(type = "long_task", autoComplete = true)
-    fun handleLongTask(job: ActivatedJob) {
-        println("execute long_task...")
-        Thread.sleep(60000)
-        println("----- finish long_task -----\n")
+    @JobWorker(type = "long_task", autoComplete = false)
+    fun handleLongTask(jobClient: JobClient, job: ActivatedJob, @VariablesAsType vars: Vars) = runBlocking {
+        log.info("=============== execute long_task, key=${vars.key}...")
+        val deadline = LocalDateTime.ofInstant(Instant.ofEpochMilli(job.deadline), ZoneId.systemDefault())
+        val deadlineStr = deadline.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+
+        if (deadline.isBefore(LocalDateTime.now()))
+            log.warn("=============== job.deadline has expired: $deadlineStr")
+        else
+            log.info("=============== job.deadline has not expired yet: $deadlineStr")
+
+        Thread.sleep(30000)
+
+        ZeebeJobUtils.sendCompleteJob(jobClient, job, vars)
     }
 
     private fun ActivatedJob.print() {
@@ -64,11 +77,7 @@ class Workers {
         println("customHeaders = $customHeaders")
     }
 
-    private fun callBack(job: ActivatedJob, err: Throwable?) {
-        if (err == null) {
-            println("${job.type} with job id '${job.key}' completed successfully")
-        } else {
-            println("${job.type} with job id '${job.key}' completion failed: $err")
-        }
-    }
+    data class Vars(
+        val key: String
+    )
 }

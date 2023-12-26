@@ -3,14 +3,13 @@ package com.example.camunda8demo
 import io.camunda.zeebe.client.ZeebeClient
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent
 import io.camunda.zeebe.client.api.response.PublishMessageResponse
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import java.util.concurrent.CompletionStage
 
 @RestController
-class Controller(@Qualifier("zeebeClientLifecycle") private val zeebe: ZeebeClient) {
+class Controller(private val zeebe: ZeebeClient) {
 
     @PostMapping("/processes")
     fun createSimpleTestProcess(@RequestBody createInstanceRequest: CreateInstanceRequest): CompletionStage<ProcessInstanceEvent> {

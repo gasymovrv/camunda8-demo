@@ -11,13 +11,13 @@
     }
     client.global.set('key', getNextKey())
 %}
-POST http://localhost:8080/processes
+POST http://localhost:8981/processes
 Content-Type: application/json
 
 {
   "bpmnProcessId": "simple-process",
   "vars": {
-    "registration_message": "TWO",
+    "registration_message": "ONE",
     "key": "{{key}}"
   }
 }

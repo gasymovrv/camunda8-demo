@@ -1,12 +1,10 @@
 package com.example.camunda8demo
 
-import io.camunda.zeebe.spring.client.EnableZeebeClient
 import io.camunda.zeebe.spring.client.annotation.Deployment
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 
 @SpringBootApplication
-@EnableZeebeClient
 @Deployment(resources = ["classpath:/bpmn/**/*.bpmn"])
 class Camunda8DemoApplication
 

@@ -7,7 +7,7 @@ networks:
 services:
   gateway:
     container_name: gateway
-    image: camunda/zeebe:8.1.4
+    image: camunda/zeebe:8.2.5
     environment:
       - ZEEBE_LOG_LEVEL=debug
       - ZEEBE_HAZELCAST_REMOTE_ADDRESS=hazelcast:5701
@@ -29,7 +29,7 @@ services:
 
   node0:
     container_name: zeebe_broker_1
-    image: camunda/zeebe:8.1.4
+    image: camunda/zeebe:8.2.5
     environment:
       - ZEEBE_LOG_LEVEL=debug
       - ZEEBE_HAZELCAST_REMOTE_ADDRESS=hazelcast:5701
@@ -50,7 +50,7 @@ services:
 
   node1:
     container_name: zeebe_broker_2
-    image: camunda/zeebe:8.1.4
+    image: camunda/zeebe:8.2.5
     environment:
       - ZEEBE_LOG_LEVEL=debug
       - ZEEBE_HAZELCAST_REMOTE_ADDRESS=hazelcast:5701
@@ -77,7 +77,7 @@ services:
 
   simple-monitor-in-memory:
     container_name: zeebe-simple-monitor-in-memory
-    image: ghcr.io/camunda-community-hub/zeebe-simple-monitor:2.3.0
+    image: ghcr.io/camunda-community-hub/zeebe-simple-monitor:2.5.2
     environment:
       - zeebe.client.broker.gateway-address=gateway:26500
       - zeebe.client.worker.hazelcast.connection=hazelcast:5701
