@@ -33,7 +33,7 @@ object ZeebeJobUtils {
                             JOB_INFO_MSG.format(job.key, job.processInstanceKey)
                     )
                 } else {
-                    log.error("$LOG_PREFIX Could not complete job '${job.type}' with key '${job.key}': ${err?.message}")
+                    log.error("$LOG_PREFIX Could not complete job '${job.type}' with key '${job.key}': ${err.message}")
                 }
             }
     }
@@ -58,7 +58,7 @@ object ZeebeJobUtils {
                             ", remaining retries: $retries"
                     )
                 } else {
-                    log.error("$LOG_PREFIX Could not fail job '${job.type}' with key '${job.key}': ${err?.message}")
+                    log.error("$LOG_PREFIX Could not fail job '${job.type}' with key '${job.key}': ${err.message}")
                 }
             }
     }
