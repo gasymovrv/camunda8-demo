@@ -11,7 +11,8 @@ import java.io.StringWriter
 import java.util.concurrent.CompletionStage
 
 object ZeebeJobUtils {
-    private const val JOB_INFO_MSG = "job id: %d, instance id: %d"
+private const val JOB_INFO_MSG = "jobKey: %d, processInstanceKey: %d"
+    private const val JOB_ERROR_MSG = "$JOB_INFO_MSG, error msg: %d"
     private const val LOG_PREFIX = "====="
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -33,7 +34,11 @@ object ZeebeJobUtils {
                             JOB_INFO_MSG.format(job.key, job.processInstanceKey)
                     )
                 } else {
-                    log.error("$LOG_PREFIX Could not complete job '${job.type}' with key '${job.key}': ${err.message}")
+                    log.error(
+                        "$LOG_PREFIX Could not complete job ${job.type}, " +
+                            JOB_ERROR_MSG.format(job.key, job.processInstanceKey, err.message),
+                        err
+                    )
                 }
             }
     }
@@ -58,7 +63,11 @@ object ZeebeJobUtils {
                             ", remaining retries: $retries"
                     )
                 } else {
-                    log.error("$LOG_PREFIX Could not fail job '${job.type}' with key '${job.key}': ${err.message}")
+                    log.error(
+                        "$LOG_PREFIX Could not fail job ${job.type}, " +
+                            JOB_ERROR_MSG.format(job.key, job.processInstanceKey, err.message),
+                        err
+                    )
                 }
             }
     }
@@ -75,13 +84,13 @@ object ZeebeJobUtils {
             .whenComplete { _, err ->
                 if (err == null) {
                     log.info(
-                        "$LOG_PREFIX Error '${zeebeIncident.code}' sent to broker, " +
+                        "$LOG_PREFIX Error '${zeebeIncident.code}' in job ${job.type} sent to broker, " +
                             JOB_INFO_MSG.format(job.key, job.processInstanceKey)
                     )
                 } else {
                     log.error(
-                        "$LOG_PREFIX Could not send error '${zeebeIncident.code}' to broker, " +
-                            JOB_INFO_MSG.format(job.key, job.processInstanceKey),
+                        "$LOG_PREFIX Could not send error '${zeebeIncident.code}' in job ${job.type} to broker, " +
+                            JOB_ERROR_MSG.format(job.key, job.processInstanceKey, err.message),
                         err
                     )
                 }
