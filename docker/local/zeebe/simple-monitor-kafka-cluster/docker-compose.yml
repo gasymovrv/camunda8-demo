@@ -1,0 +1,109 @@
+version: '3.3'
+
+networks:
+  zeebe_network:
+    driver: bridge
+
+services:
+  zeebe-gateway:
+    container_name: zeebe_gateway
+    image: camunda/zeebe:${ZEEBE_VERSION}
+    environment:
+      - ZEEBE_LOG_LEVEL=debug
+      - ZEEBE_STANDALONE_GATEWAY=true
+      - ZEEBE_GATEWAY_NETWORK_HOST=0.0.0.0
+      - ZEEBE_GATEWAY_NETWORK_PORT=26500
+      - ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS=zeebe-node0:26502
+      - ZEEBE_GATEWAY_CLUSTER_PORT=26502
+      - ZEEBE_GATEWAY_CLUSTER_HOST=zeebe-gateway
+      - SPRING_CONFIG_ADDITIONAL_LOCATION=/usr/local/zeebe/config/application.yml
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_TOPIC=zeebe
+    ports:
+      - "26500:26500"
+    volumes:
+      - ./application.yml:/usr/local/zeebe/config/application.yml
+      - ./exporter/zeebe-kafka-exporter-3.1.1-jar-with-dependencies.jar:/usr/local/zeebe/lib/zeebe-kafka-exporter.jar
+    depends_on:
+      - kafka
+    networks:
+      - zeebe_network
+
+  zeebe-node0:
+    container_name: zeebe_broker_0
+    image: camunda/zeebe:${ZEEBE_VERSION}
+    environment:
+      - ZEEBE_LOG_LEVEL=debug
+      - ZEEBE_BROKER_CLUSTER_NODEID=0
+      - ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT=10
+      - SPRING_CONFIG_ADDITIONAL_LOCATION=/usr/local/zeebe/config/application.yml
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_TOPIC=zeebe
+    ports:
+      - "9600:9600"
+    volumes:
+      - ./application.yml:/usr/local/zeebe/config/application.yml
+      - ./exporter/zeebe-kafka-exporter-3.1.1-jar-with-dependencies.jar:/usr/local/zeebe/lib/zeebe-kafka-exporter.jar
+    depends_on:
+      - zeebe-gateway
+    networks:
+      - zeebe_network
+
+  zeebe-node1:
+    container_name: zeebe_broker_1
+    image: camunda/zeebe:${ZEEBE_VERSION}
+    environment:
+      - ZEEBE_LOG_LEVEL=debug
+      - ZEEBE_BROKER_CLUSTER_NODEID=1
+      - ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT=10
+      - SPRING_CONFIG_ADDITIONAL_LOCATION=/usr/local/zeebe/config/application.yml
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_TOPIC=zeebe
+    volumes:
+      - ./application.yml:/usr/local/zeebe/config/application.yml
+      - ./exporter/zeebe-kafka-exporter-3.1.1-jar-with-dependencies.jar:/usr/local/zeebe/lib/zeebe-kafka-exporter.jar
+    depends_on:
+      - zeebe-node0
+    networks:
+      - zeebe_network
+
+  zookeeper:
+    image: docker.io/bitnami/zookeeper:3.8
+    ports:
+      - "2181:2181"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    networks:
+      - zeebe_network
+
+  kafka:
+    image: docker.io/bitnami/kafka:3.4
+    ports:
+      - "9093:9093"
+    environment:
+      - KAFKA_ENABLE_KRAFT=no
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:9093
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper
+    networks:
+      - zeebe_network
+
+  simple-monitor-in-memory-kafka:
+    container_name: zeebe-simple-monitor-in-memory-kafka
+    image: ghcr.io/camunda-community-hub/zeebe-simple-monitor:${SIMPLE_MONITOR_VERSION}
+    environment:
+      - zeebe.client.broker.gateway-address=zeebe-gateway:26500
+      - zeebe-importer=kafka
+      - spring.kafka.bootstrap-servers=kafka:9092
+      - spring.kafka.template.default-topic=zeebe
+    ports:
+      - "8082:8082"
+    depends_on:
+      - zeebe-gateway
+    networks:
+      - zeebe_network

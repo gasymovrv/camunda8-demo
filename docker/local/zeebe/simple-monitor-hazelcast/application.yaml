@@ -1,0 +1,11 @@
+zeebe:
+  broker:
+    exporters:
+      hazelcast:
+        className: io.zeebe.hazelcast.exporter.HazelcastExporter
+        jarPath: exporters/zeebe-hazelcast-exporter.jar
+    cluster:
+#      nodeId: 0
+      clusterSize: 1
+      replicationFactor: 1
+      partitionsCount: 8

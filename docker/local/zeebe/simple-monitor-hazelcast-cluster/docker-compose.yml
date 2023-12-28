@@ -1,0 +1,108 @@
+version: "3"
+
+networks:
+  zeebe_network:
+    driver: bridge
+
+services:
+  zeebe-gateway:
+    container_name: zeebe_gateway
+    image: camunda/zeebe:${ZEEBE_VERSION}
+    environment:
+      - ZEEBE_LOG_LEVEL=debug
+      - ZEEBE_HAZELCAST_REMOTE_ADDRESS=hazelcast:5701
+      - ZEEBE_STANDALONE_GATEWAY=true
+      - ZEEBE_GATEWAY_NETWORK_HOST=0.0.0.0
+      - ZEEBE_GATEWAY_NETWORK_PORT=26500
+      - ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS=zeebe-node0:26502
+      - ZEEBE_GATEWAY_CLUSTER_PORT=26502
+      - ZEEBE_GATEWAY_CLUSTER_HOST=zeebe-gateway
+    ports:
+      - "26500:26500"
+    volumes:
+      - ./exporter/zeebe-hazelcast-exporter-1.2.1-SNAPSHOT-jar-with-dependencies.jar:/usr/local/zeebe/exporters/zeebe-hazelcast-exporter.jar
+      - ./application.yaml:/usr/local/zeebe/config/application.yaml
+    networks:
+      - zeebe_network
+
+  zeebe-node0:
+    container_name: zeebe_broker_0
+    image: camunda/zeebe:${ZEEBE_VERSION}
+    environment:
+      - ZEEBE_LOG_LEVEL=debug
+      - ZEEBE_HAZELCAST_REMOTE_ADDRESS=hazelcast:5701
+      - ZEEBE_BROKER_CLUSTER_NODEID=0
+      - ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT=10
+    ports:
+      - "9600:9600"
+    volumes:
+      - ./exporter/zeebe-hazelcast-exporter-1.2.1-SNAPSHOT-jar-with-dependencies.jar:/usr/local/zeebe/exporters/zeebe-hazelcast-exporter.jar
+      - ./application.yaml:/usr/local/zeebe/config/application.yaml
+    networks:
+      - zeebe_network
+    depends_on:
+      - zeebe-gateway
+
+  zeebe-node1:
+    container_name: zeebe_broker_1
+    image: camunda/zeebe:${ZEEBE_VERSION}
+    environment:
+      - ZEEBE_LOG_LEVEL=debug
+      - ZEEBE_HAZELCAST_REMOTE_ADDRESS=hazelcast:5701
+      - ZEEBE_BROKER_CLUSTER_NODEID=1
+      - ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT=10
+    volumes:
+      - ./exporter/zeebe-hazelcast-exporter-1.2.1-SNAPSHOT-jar-with-dependencies.jar:/usr/local/zeebe/exporters/zeebe-hazelcast-exporter.jar
+      - ./application.yaml:/usr/local/zeebe/config/application.yaml
+    networks:
+      - zeebe_network
+    depends_on:
+      - zeebe-node0
+
+  hazelcast:
+    container_name: hazelcast
+    image: hazelcast/hazelcast:5.1.2
+    ports:
+      - "5701:5701"
+    networks:
+      - zeebe_network
+
+  simple-monitor-in-memory:
+    container_name: zeebe-simple-monitor-in-memory
+    image: ghcr.io/camunda-community-hub/zeebe-simple-monitor:${SIMPLE_MONITOR_VERSION}
+    environment:
+      - zeebe.client.broker.gateway-address=zeebe-gateway:26500
+      - zeebe.client.worker.hazelcast.connection=hazelcast:5701
+    ports:
+      - "8082:8082"
+    networks:
+      - zeebe_network
+
+#  simple-monitor-postgres:
+#    container_name: zeebe-simple-monitor-postgres
+#    image: ghcr.io/camunda-community-hub/zeebe-simple-monitor:${SIMPLE_MONITOR_VERSION}
+#    environment:
+#      - zeebe.client.broker.gateway-address=zeebe-gateway:26500
+#      - zeebe.client.worker.hazelcast.connection=hazelcast:5701
+#      - spring.datasource.url=jdbc:postgresql://postgres:5432/postgres
+#      - spring.datasource.username=postgres
+#      - spring.datasource.password=zeebe
+#      - spring.datasource.driverClassName=org.postgresql.Driver
+#      - spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+#    ports:
+#      - "8082:8082"
+#    depends_on:
+#      - zeebe
+#      - postgres
+#    networks:
+#      - zeebe_network
+#
+#  postgres:
+#    image: postgres:13.3
+#    restart: always
+#    environment:
+#      POSTGRES_PASSWORD: zeebe
+#    ports:
+#      - "5432:5432"
+#    networks:
+#      - zeebe_network
