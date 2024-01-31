@@ -17,7 +17,12 @@ Content-Type: application/json
 {
   "bpmnProcessId": "process-with-embedded-subprocess",
   "vars": {
-    "registration_message": "TWO",
+    "registration_message": "ONE",
+    "delay": 3000,
+    "retry": 7,
+    "fail": true,
+    "error": false,
+    "handleError": true,
     "key": "{{key2}}"
   }
 }

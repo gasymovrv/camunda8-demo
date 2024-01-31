@@ -1,0 +1,19 @@
+### Resolve incident
+POST http://localhost:8080/incidents/2251799813686438/resolve
+
+
+### Delete process definition
+DELETE http://localhost:8080/process-definitions/2251799813685249
+
+
+### Deploy process definition
+POST http://localhost:8080/process-definitions
+Content-Type: application/json
+
+{
+  "fileName": "D:\\Projects\\camunda8-demo\\src\\main\\resources\\bpmn\\process-with-embedded-subprocess.bpmn"
+}
+
+
+### Get topology
+GET http://localhost:8080/topology

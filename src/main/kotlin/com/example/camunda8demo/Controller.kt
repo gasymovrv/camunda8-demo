@@ -1,10 +1,17 @@
 package com.example.camunda8demo
 
 import io.camunda.zeebe.client.ZeebeClient
+import io.camunda.zeebe.client.api.response.DeploymentEvent
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent
 import io.camunda.zeebe.client.api.response.PublishMessageResponse
+import io.camunda.zeebe.client.api.response.Topology
+import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import java.util.concurrent.CompletionStage
 
@@ -12,7 +19,7 @@ import java.util.concurrent.CompletionStage
 class Controller(private val zeebe: ZeebeClient) {
 
     @PostMapping("/processes")
-    fun createSimpleTestProcess(@RequestBody createInstanceRequest: CreateInstanceRequest): CompletionStage<ProcessInstanceEvent> {
+    fun createInstance(@RequestBody createInstanceRequest: CreateInstanceRequest): CompletionStage<ProcessInstanceEvent> {
         val (bpmnProcessId, vars) = createInstanceRequest
 
         return zeebe.newCreateInstanceCommand()
@@ -44,6 +51,52 @@ class Controller(private val zeebe: ZeebeClient) {
                 it
             }
     }
+
+    @PostMapping("/incidents/{key}/resolve")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun resolveIncident(@PathVariable key: Long): CompletionStage<Void> {
+        return zeebe.newResolveIncidentCommand(key).send()
+            .thenAccept {
+                println("Incident '$key' resolved")
+            }.exceptionally {
+                error(it)
+            }
+    }
+
+    @DeleteMapping("/process-definitions/{key}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun deleteResource(@PathVariable key: Long): CompletionStage<Void> {
+        return zeebe.newDeleteResourceCommand(key).send()
+            .thenAccept {
+                println("Process definition '$key' deleted")
+            }.exceptionally {
+                error(it)
+            }
+    }
+
+    @PostMapping("/process-definitions")
+    fun deployResource(@RequestBody request: DeployResourceRequest): CompletionStage<DeploymentEvent> {
+        return zeebe.newDeployResourceCommand()
+            .addResourceFile(request.fileName)
+            .send()
+            .thenApply {
+                println("Process definition '${request.fileName}' deployed, key: ${it.key}")
+                it
+            }.exceptionally {
+                error(it)
+            }
+    }
+
+    @GetMapping("/topology")
+    fun topology(): CompletionStage<Topology> {
+        return zeebe.newTopologyRequest().send()
+            .thenApply {
+                println("Topology: $it")
+                it
+            }.exceptionally {
+                error(it)
+            }
+    }
 }
 
 data class CreateInstanceRequest(
@@ -56,4 +109,8 @@ data class SendMessageRequest(
     val correlationKey: String,
     val messageId: String? = null,
     val vars: Map<String, Any?>? = null
+)
+
+data class DeployResourceRequest(
+    val fileName: String
 )

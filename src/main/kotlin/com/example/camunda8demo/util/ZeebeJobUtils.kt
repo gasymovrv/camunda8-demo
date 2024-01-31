@@ -1,18 +1,15 @@
 package com.example.camunda8demo.util
 
-import com.example.camunda8demo.exception.ZeebeIncident
 import io.camunda.zeebe.client.api.response.ActivatedJob
 import io.camunda.zeebe.client.api.response.CompleteJobResponse
 import io.camunda.zeebe.client.api.response.FailJobResponse
 import io.camunda.zeebe.client.api.worker.JobClient
 import org.slf4j.LoggerFactory
-import java.io.PrintWriter
-import java.io.StringWriter
 import java.util.concurrent.CompletionStage
 
 object ZeebeJobUtils {
-private const val JOB_INFO_MSG = "jobKey: %d, processInstanceKey: %d"
-    private const val JOB_ERROR_MSG = "$JOB_INFO_MSG, error msg: %d"
+    private const val JOB_INFO_MSG = "jobKey: %d, processInstanceKey: %d"
+    private const val JOB_ERROR_MSG = "$JOB_INFO_MSG, error: %d"
     private const val LOG_PREFIX = "====="
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -36,7 +33,7 @@ private const val JOB_INFO_MSG = "jobKey: %d, processInstanceKey: %d"
                 } else {
                     log.error(
                         "$LOG_PREFIX Could not complete job ${job.type}, " +
-                            JOB_ERROR_MSG.format(job.key, job.processInstanceKey, err.message),
+                            JOB_ERROR_MSG.format(job.key, job.processInstanceKey, err.toString()),
                         err
                     )
                 }
@@ -49,23 +46,24 @@ private const val JOB_INFO_MSG = "jobKey: %d, processInstanceKey: %d"
         job: ActivatedJob,
         retries: Int = (job.retries - 1)
     ): CompletionStage<FailJobResponse> {
-        val stringWriter = StringWriter()
-        e.printStackTrace(PrintWriter(stringWriter))
+        val errorCode = e.javaClass.simpleName
+
         return jobClient
             .newFailCommand(job)
             .retries(retries)
-            .errorMessage(stringWriter.toString())
+            .errorMessage(e.toString())
             .send()
             .whenComplete { _, err ->
                 if (err == null) {
-                    log.info(
-                        "$LOG_PREFIX Failed job ${job.type}, ${JOB_INFO_MSG.format(job.key, job.processInstanceKey)}" +
+                    log.warn(
+                        "$LOG_PREFIX Failed job ${job.type} because of '$errorCode', " +
+                            JOB_INFO_MSG.format(job.key, job.processInstanceKey) +
                             ", remaining retries: $retries"
                     )
                 } else {
                     log.error(
-                        "$LOG_PREFIX Could not fail job ${job.type}, " +
-                            JOB_ERROR_MSG.format(job.key, job.processInstanceKey, err.message),
+                        "$LOG_PREFIX Could not fail job ${job.type} on '$errorCode', " +
+                            JOB_ERROR_MSG.format(job.key, job.processInstanceKey, err.toString()),
                         err
                     )
                 }
@@ -73,27 +71,44 @@ private const val JOB_INFO_MSG = "jobKey: %d, processInstanceKey: %d"
     }
 
     fun sendJobError(
+        e: Exception,
         jobClient: JobClient,
-        job: ActivatedJob,
-        zeebeIncident: ZeebeIncident
+        job: ActivatedJob
     ): CompletionStage<Void> {
+        val errorCode = e.javaClass.simpleName
+
         return jobClient.newThrowErrorCommand(job.key)
-            .errorCode(zeebeIncident.code)
-            .errorMessage(zeebeIncident.message)
+            .errorCode(errorCode)
+            .errorMessage(e.toString())
             .send()
             .whenComplete { _, err ->
                 if (err == null) {
-                    log.info(
-                        "$LOG_PREFIX Error '${zeebeIncident.code}' in job ${job.type} sent to broker, " +
+                    log.warn(
+                        "$LOG_PREFIX Error '$errorCode' in job ${job.type} sent to broker, " +
                             JOB_INFO_MSG.format(job.key, job.processInstanceKey)
                     )
                 } else {
                     log.error(
-                        "$LOG_PREFIX Could not send error '${zeebeIncident.code}' in job ${job.type} to broker, " +
-                            JOB_ERROR_MSG.format(job.key, job.processInstanceKey, err.message),
+                        "$LOG_PREFIX Could not send error '$errorCode' in job ${job.type} to broker, " +
+                            JOB_ERROR_MSG.format(job.key, job.processInstanceKey, err.toString()),
                         err
                     )
                 }
             }
+    }
+
+    fun logStartJob(job: ActivatedJob) {
+        log.info("$LOG_PREFIX Start ${job.type}, ${JOB_INFO_MSG.format(job.key, job.processInstanceKey)}")
+    }
+
+    fun logEndJob(job: ActivatedJob) {
+        log.info("$LOG_PREFIX End ${job.type}, ${JOB_INFO_MSG.format(job.key, job.processInstanceKey)}")
+    }
+
+    fun logJobError(job: ActivatedJob, e: Throwable) {
+        log.error(
+            "$LOG_PREFIX Error occurred in ${job.type}, ${JOB_INFO_MSG.format(job.key, job.processInstanceKey)}",
+            e
+        )
     }
 }
