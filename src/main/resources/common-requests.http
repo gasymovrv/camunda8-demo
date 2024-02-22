@@ -1,3 +1,6 @@
+### Cancel instance
+POST http://localhost:8080/processes/2251799813685425/cancel
+
 ### Resolve incident
 POST http://localhost:8080/incidents/2251799813686438/resolve
 

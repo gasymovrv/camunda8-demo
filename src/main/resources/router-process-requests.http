@@ -1,0 +1,67 @@
+### Create instance of router-process-requests.bpmn
+< {%
+    function getNextKey() {
+        let previous = client.global.get('processId1')
+        if (previous == null) {
+            return "1"
+        } else {
+            let newKey = parseInt(previous)
+            return (++newKey).toFixed(0)
+        }
+    }
+    client.global.set('processId1', getNextKey())
+%}
+POST http://localhost:8080/processes
+Content-Type: application/json
+
+{
+  "bpmnProcessId": "ROUTER_PROCESS",
+  "vars": {
+    "processId": "{{processId1}}"
+  }
+}
+
+### Send message 'NEED_WAIT'
+POST http://localhost:8080/messages
+Content-Type: application/json
+
+{
+  "msgName": "NEED_WAIT",
+  "correlationKey": "{{processId1}}"
+}
+
+### Send message 'CLIENT_RESPONSE'
+POST http://localhost:8080/messages
+Content-Type: application/json
+
+{
+  "msgName": "CLIENT_RESPONSE",
+  "correlationKey": "{{processId1}}"
+}
+
+### Send message 'CREATE_TASK'
+POST http://localhost:8080/messages
+Content-Type: application/json
+
+{
+  "msgName": "CREATE_TASK",
+  "correlationKey": "{{processId1}}"
+}
+
+### Send message 'ERROR'
+POST http://localhost:8080/messages
+Content-Type: application/json
+
+{
+  "msgName": "ERROR",
+  "correlationKey": "{{processId1}}"
+}
+
+### Send message 'DONE'
+POST http://localhost:8080/messages
+Content-Type: application/json
+
+{
+  "msgName": "DONE",
+  "correlationKey": "{{processId1}}"
+}

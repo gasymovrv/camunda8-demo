@@ -1,11 +1,13 @@
 package com.example.camunda8demo
 
 import com.example.camunda8demo.util.ZeebeJobUtils
+import io.camunda.zeebe.client.ZeebeClient
 import io.camunda.zeebe.client.api.response.ActivatedJob
 import io.camunda.zeebe.client.api.worker.JobClient
 import io.camunda.zeebe.spring.client.annotation.JobWorker
 import io.camunda.zeebe.spring.client.annotation.VariablesAsType
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -16,7 +18,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Component
-class Workers {
+class Workers(private val zeebe: ZeebeClient) {
     val log: Logger = LoggerFactory.getLogger(javaClass)
 
     @JobWorker(type = "simple_task1", autoComplete = false)
@@ -86,6 +88,25 @@ class Workers {
         Thread.sleep(30000)
 
         ZeebeJobUtils.sendCompleteJob(jobClient, job, vars)
+    }
+
+    @JobWorker(type = "SendMsg")
+    fun handleSendMsg(
+        jobClient: JobClient,
+        job: ActivatedJob,
+        @VariablesAsType vars: Map<String, Any>
+    ) = runBlocking {
+        val msgName = vars["msgName"] as String
+        val correlationKey = vars["correlationKey"] as String
+        val others = vars["vars"] ?: mapOf<String, Any>()
+
+        zeebe.newPublishMessageCommand()
+            .messageName(msgName)
+            .correlationKey(correlationKey)
+            .variables(others)
+            .send()
+            .await()
+        log.info("=============== SendMsg")
     }
 
     private fun ActivatedJob.print() {

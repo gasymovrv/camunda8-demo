@@ -30,6 +30,7 @@ Content-Type: application/json
   "msgName": "MsgSimpleProcessEvent",
   "correlationKey": "{{key}}",
   "vars": {
+    "needToStartAgain": false,
     "additionalProp1": {"name": "name"}
   }
 }

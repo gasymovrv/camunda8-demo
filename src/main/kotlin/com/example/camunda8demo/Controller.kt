@@ -19,7 +19,7 @@ import java.util.concurrent.CompletionStage
 class Controller(private val zeebe: ZeebeClient) {
 
     @PostMapping("/processes")
-    fun createInstance(@RequestBody createInstanceRequest: CreateInstanceRequest): CompletionStage<ProcessInstanceEvent> {
+    fun createInstance(@RequestBody createInstanceRequest: CreateInstanceRequest): CompletionStage<CreateInstanceResponse> {
         val (bpmnProcessId, vars) = createInstanceRequest
 
         return zeebe.newCreateInstanceCommand()
@@ -29,7 +29,18 @@ class Controller(private val zeebe: ZeebeClient) {
             .send()
             .thenApply {
                 println("Instance created. Key: ${it.processInstanceKey}")
-                it
+                CreateInstanceResponse(systemInfo = it, inputVars = vars)
+            }
+    }
+
+    @PostMapping("/processes/{key}/cancel")
+    fun cancelInstance(@PathVariable key: Long) {
+        zeebe.newCancelInstanceCommand(key)
+            .send()
+            .thenApply {
+                println("Instance $key cancelled ")
+            }.exceptionally {
+                error(it)
             }
     }
 
@@ -102,6 +113,12 @@ class Controller(private val zeebe: ZeebeClient) {
 data class CreateInstanceRequest(
     val bpmnProcessId: String,
     val vars: Map<String, Any?>? = null
+)
+
+data class CreateInstanceResponse(
+    val systemInfo: ProcessInstanceEvent,
+    val link: String = "http://localhost:8082/views/instances/${systemInfo.processInstanceKey}",
+    val inputVars: Map<String, Any?>? = null
 )
 
 data class SendMessageRequest(
