@@ -28,7 +28,7 @@ class Controller(private val zeebe: ZeebeClient) {
             .variables(vars ?: mapOf())
             .send()
             .thenApply {
-                println("Instance created. Key: ${it.processInstanceKey}")
+                println("Instance created. Key: ${it.processInstanceKey}, vars: $vars")
                 CreateInstanceResponse(systemInfo = it, inputVars = vars)
             }
     }
@@ -58,7 +58,7 @@ class Controller(private val zeebe: ZeebeClient) {
 
         return command.send()
             .thenApply {
-                println("Message '$msgName' sent. CorrelationKey: $correlationKey, messageKey: ${it.messageKey}")
+                println("Message '$msgName' sent. CorrelationKey: $correlationKey, messageKey: ${it.messageKey}, vars: $vars")
                 it
             }
     }

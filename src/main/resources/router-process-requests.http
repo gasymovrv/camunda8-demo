@@ -45,7 +45,10 @@ Content-Type: application/json
 
 {
   "msgName": "CREATE_TASK",
-  "correlationKey": "{{processId1}}"
+  "correlationKey": "{{processId1}}",
+  "vars": {
+    "taskId": "{{processId1}}_1"
+  }
 }
 
 ### Send message 'ERROR'
@@ -63,5 +66,14 @@ Content-Type: application/json
 
 {
   "msgName": "DONE",
+  "correlationKey": "{{processId1}}"
+}
+
+### Send message 'DONE_BYPASS'
+POST http://localhost:8080/messages
+Content-Type: application/json
+
+{
+  "msgName": "DONE_BYPASS",
   "correlationKey": "{{processId1}}"
 }
