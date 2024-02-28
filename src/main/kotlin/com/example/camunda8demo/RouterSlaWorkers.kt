@@ -11,14 +11,12 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
 import java.util.concurrent.ConcurrentHashMap
 
 
 @Component
 class RouterSlaWorkers {
     private val log: Logger = LoggerFactory.getLogger(javaClass)
-    private val pattern: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
     private val remainingMsMap: MutableMap<String, Long> = ConcurrentHashMap()
     private val spentMsMap: MutableMap<String, Long> = ConcurrentHashMap()
     private val sla = 60L

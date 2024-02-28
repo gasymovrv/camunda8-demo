@@ -1,9 +1,7 @@
 package com.example.camunda8demo
 
 import com.example.camunda8demo.util.ZeebeJobUtils
-import io.camunda.zeebe.client.ZeebeClient
 import io.camunda.zeebe.client.api.response.ActivatedJob
-import io.camunda.zeebe.client.api.response.PublishMessageResponse
 import io.camunda.zeebe.client.api.worker.JobClient
 import io.camunda.zeebe.spring.client.annotation.JobWorker
 import io.camunda.zeebe.spring.client.annotation.VariablesAsType
@@ -11,16 +9,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.Future
 
 @Component
-class Workers(private val zeebe: ZeebeClient) {
+class Workers() {
     val log: Logger = LoggerFactory.getLogger(javaClass)
 
     @JobWorker(type = "simple_task1", autoComplete = false)
@@ -90,27 +86,6 @@ class Workers(private val zeebe: ZeebeClient) {
         Thread.sleep(30000)
 
         ZeebeJobUtils.sendCompleteJob(jobClient, job, vars)
-    }
-
-    @Async
-    @JobWorker(type = "SendMsg")
-    fun handleSendMsg(
-        jobClient: JobClient,
-        job: ActivatedJob,
-        @VariablesAsType vars: Map<String, Any>
-    ): Future<PublishMessageResponse> {
-        val msgName = vars["msgName"] as String
-        val correlationKey = vars["correlationKey"] as String
-        val others = vars["vars"] ?: mapOf<String, Any>()
-
-        return zeebe.newPublishMessageCommand()
-            .messageName(msgName)
-            .correlationKey(correlationKey)
-            .variables(others)
-            .send()
-            .whenComplete { _, _ ->
-                log.info("=============== SendMsg, msgName = $msgName, correlationKey = $correlationKey, others = $others")
-            }.toCompletableFuture()
     }
 
     private fun ActivatedJob.print() {
