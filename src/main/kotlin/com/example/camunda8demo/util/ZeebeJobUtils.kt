@@ -5,7 +5,7 @@ import io.camunda.zeebe.client.api.response.CompleteJobResponse
 import io.camunda.zeebe.client.api.response.FailJobResponse
 import io.camunda.zeebe.client.api.worker.JobClient
 import org.slf4j.LoggerFactory
-import java.util.concurrent.CompletionStage
+import java.util.concurrent.CompletableFuture
 
 object ZeebeJobUtils {
     private const val JOB_INFO_MSG = "jobKey: %d, processInstanceKey: %d"
@@ -18,7 +18,7 @@ object ZeebeJobUtils {
         jobClient: JobClient,
         job: ActivatedJob,
         vars: Any? = null
-    ): CompletionStage<CompleteJobResponse> {
+    ): CompletableFuture<CompleteJobResponse> {
         val completeCommandAction = jobClient.newCompleteCommand(job)
         if (vars !is Unit && vars != null) {
             completeCommandAction.variables(vars)
@@ -37,7 +37,7 @@ object ZeebeJobUtils {
                         err
                     )
                 }
-            }
+            }.toCompletableFuture()
     }
 
     fun sendFailJob(
@@ -45,7 +45,7 @@ object ZeebeJobUtils {
         jobClient: JobClient,
         job: ActivatedJob,
         retries: Int = (job.retries - 1)
-    ): CompletionStage<FailJobResponse> {
+    ): CompletableFuture<FailJobResponse> {
         val errorCode = e.javaClass.simpleName
 
         return jobClient
@@ -67,14 +67,14 @@ object ZeebeJobUtils {
                         err
                     )
                 }
-            }
+            }.toCompletableFuture()
     }
 
     fun sendJobError(
         e: Exception,
         jobClient: JobClient,
         job: ActivatedJob
-    ): CompletionStage<Void> {
+    ): CompletableFuture<Void> {
         val errorCode = e.javaClass.simpleName
 
         return jobClient.newThrowErrorCommand(job.key)
@@ -94,7 +94,7 @@ object ZeebeJobUtils {
                         err
                     )
                 }
-            }
+            }.toCompletableFuture()
     }
 
     fun logStartJob(job: ActivatedJob) {

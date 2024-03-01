@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_04o3ktx" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.20.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.4.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_04o3ktx" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.20.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.4.0">
   <bpmn:process id="SLA_PROCESS" name="Cообщение об истечении SLA" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:extensionElements>
@@ -13,12 +13,14 @@
       <bpmn:incoming>Flow_1s5slox</bpmn:incoming>
       <bpmn:outgoing>Flow_1q6yzgm</bpmn:outgoing>
       <bpmn:startEvent id="Event_1q06qyh">
+        <bpmn:extensionElements />
         <bpmn:outgoing>Flow_14baveb</bpmn:outgoing>
       </bpmn:startEvent>
       <bpmn:subProcess id="Activity_1xj5mwg">
         <bpmn:incoming>Flow_0acybgv</bpmn:incoming>
         <bpmn:outgoing>Flow_0ta87qa</bpmn:outgoing>
         <bpmn:startEvent id="Event_0q1lgqd">
+          <bpmn:extensionElements />
           <bpmn:outgoing>Flow_1mbbn5k</bpmn:outgoing>
         </bpmn:startEvent>
         <bpmn:intermediateCatchEvent id="Event_0jl4s7h">
@@ -68,7 +70,7 @@
             <bpmn:outgoing>Flow_0thxzuv</bpmn:outgoing>
             <bpmn:messageEventDefinition id="MessageEventDefinition_03sgaqu" messageRef="Message_3umc1fk" />
           </bpmn:startEvent>
-          <bpmn:serviceTask id="Activity_1j6tuhe" name="Проверить успешность SLA">
+          <bpmn:serviceTask id="Activity_1j6tuhe" name="Проверить успешность через сущнсть SLA">
             <bpmn:extensionElements>
               <zeebe:taskDefinition type="CheckSla" />
             </bpmn:extensionElements>
@@ -97,24 +99,47 @@
             <bpmn:escalationEventDefinition id="EscalationEventDefinition_1eiamxc" escalationRef="Escalation_35ul73v" />
           </bpmn:endEvent>
         </bpmn:subProcess>
+        <bpmn:subProcess id="Activity_0qu42k4" triggeredByEvent="true">
+          <bpmn:startEvent id="Event_0gs344r" isInterrupting="false">
+            <bpmn:extensionElements />
+            <bpmn:outgoing>Flow_0ha7s7e</bpmn:outgoing>
+            <bpmn:messageEventDefinition id="MessageEventDefinition_0y761es" messageRef="Message_3ps3h9o" />
+          </bpmn:startEvent>
+          <bpmn:sequenceFlow id="Flow_0ha7s7e" sourceRef="Event_0gs344r" targetRef="Activity_122bv5i" />
+          <bpmn:exclusiveGateway id="Gateway_0mki9kq" default="Flow_11kddo2">
+            <bpmn:incoming>Flow_0wyldsk</bpmn:incoming>
+            <bpmn:outgoing>Flow_0khungj</bpmn:outgoing>
+            <bpmn:outgoing>Flow_11kddo2</bpmn:outgoing>
+          </bpmn:exclusiveGateway>
+          <bpmn:sequenceFlow id="Flow_0khungj" sourceRef="Gateway_0mki9kq" targetRef="Event_1kd67v9">
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=slaShouldPause</bpmn:conditionExpression>
+          </bpmn:sequenceFlow>
+          <bpmn:sequenceFlow id="Flow_11kddo2" sourceRef="Gateway_0mki9kq" targetRef="Event_0hz25so" />
+          <bpmn:serviceTask id="Activity_122bv5i" name="Поставить сущность SLA на паузу">
+            <bpmn:extensionElements>
+              <zeebe:taskDefinition type="PauseSla" />
+            </bpmn:extensionElements>
+            <bpmn:incoming>Flow_0ha7s7e</bpmn:incoming>
+            <bpmn:outgoing>Flow_0wyldsk</bpmn:outgoing>
+          </bpmn:serviceTask>
+          <bpmn:sequenceFlow id="Flow_0wyldsk" sourceRef="Activity_122bv5i" targetRef="Gateway_0mki9kq" />
+          <bpmn:endEvent id="Event_1kd67v9" name="Сообщение о паузе SLA">
+            <bpmn:incoming>Flow_0khungj</bpmn:incoming>
+            <bpmn:escalationEventDefinition id="EscalationEventDefinition_12f8hr1" escalationRef="Escalation_2ibu05f" />
+          </bpmn:endEvent>
+          <bpmn:endEvent id="Event_0hz25so">
+            <bpmn:extensionElements />
+            <bpmn:incoming>Flow_11kddo2</bpmn:incoming>
+          </bpmn:endEvent>
+        </bpmn:subProcess>
       </bpmn:subProcess>
       <bpmn:endEvent id="Event_104x7qn" name="Завершение SLA по истечению времени">
         <bpmn:incoming>Flow_0ta87qa</bpmn:incoming>
       </bpmn:endEvent>
-      <bpmn:serviceTask id="Activity_0lkph6m" name="Поставить SLA на паузу">
-        <bpmn:extensionElements>
-          <zeebe:taskDefinition type="PauseSla" />
-          <zeebe:ioMapping>
-            <zeebe:output source="=&#34;PAUSE&#34;" target="startType" />
-          </zeebe:ioMapping>
-        </bpmn:extensionElements>
-        <bpmn:incoming>Flow_0u785fq</bpmn:incoming>
-        <bpmn:outgoing>Flow_06f5mm3</bpmn:outgoing>
-      </bpmn:serviceTask>
       <bpmn:exclusiveGateway id="Gateway_0a0bfjm" default="Flow_0xs2qzd">
-        <bpmn:incoming>Flow_06f5mm3</bpmn:incoming>
         <bpmn:incoming>Flow_02tiihq</bpmn:incoming>
         <bpmn:incoming>Flow_14baveb</bpmn:incoming>
+        <bpmn:incoming>Flow_0u785fq</bpmn:incoming>
         <bpmn:outgoing>Flow_0xs2qzd</bpmn:outgoing>
         <bpmn:outgoing>Flow_17ep3b3</bpmn:outgoing>
         <bpmn:outgoing>Flow_0xwn3f9</bpmn:outgoing>
@@ -132,10 +157,6 @@
       <bpmn:boundaryEvent id="Event_0ifmi8k" attachedToRef="Activity_1xj5mwg">
         <bpmn:outgoing>Flow_1imenb7</bpmn:outgoing>
         <bpmn:messageEventDefinition id="MessageEventDefinition_1qpjoey" messageRef="Message_1hndihc" />
-      </bpmn:boundaryEvent>
-      <bpmn:boundaryEvent id="Event_12c95hk" attachedToRef="Activity_1xj5mwg">
-        <bpmn:outgoing>Flow_0u785fq</bpmn:outgoing>
-        <bpmn:messageEventDefinition id="MessageEventDefinition_1q10077" messageRef="Message_0sonip5" />
       </bpmn:boundaryEvent>
       <bpmn:serviceTask id="Activity_0nio8yg" name="Рассчитать новый SLA с учетом потраченного времени">
         <bpmn:extensionElements>
@@ -171,8 +192,7 @@
       </bpmn:intermediateCatchEvent>
       <bpmn:sequenceFlow id="Flow_0acybgv" sourceRef="Gateway_0zbjs1g" targetRef="Activity_1xj5mwg" />
       <bpmn:sequenceFlow id="Flow_0ta87qa" sourceRef="Activity_1xj5mwg" targetRef="Event_104x7qn" />
-      <bpmn:sequenceFlow id="Flow_0u785fq" sourceRef="Event_12c95hk" targetRef="Activity_0lkph6m" />
-      <bpmn:sequenceFlow id="Flow_06f5mm3" sourceRef="Activity_0lkph6m" targetRef="Gateway_0a0bfjm" />
+      <bpmn:sequenceFlow id="Flow_0u785fq" sourceRef="Event_12c95hk" targetRef="Gateway_0a0bfjm" />
       <bpmn:sequenceFlow id="Flow_02tiihq" sourceRef="Activity_1hr8erd" targetRef="Gateway_0a0bfjm" />
       <bpmn:sequenceFlow id="Flow_0xs2qzd" sourceRef="Gateway_0a0bfjm" targetRef="Activity_0nek8ed" />
       <bpmn:sequenceFlow id="Flow_17ep3b3" sourceRef="Gateway_0a0bfjm" targetRef="Activity_0nio8yg">
@@ -195,6 +215,15 @@
         <bpmn:outgoing>Flow_1wl0tgz</bpmn:outgoing>
         <bpmn:escalationEventDefinition id="EscalationEventDefinition_0s3ux2v" escalationRef="Escalation_35ul73v" />
       </bpmn:boundaryEvent>
+      <bpmn:boundaryEvent id="Event_12c95hk" attachedToRef="Activity_1xj5mwg">
+        <bpmn:extensionElements>
+          <zeebe:ioMapping>
+            <zeebe:output source="=&#34;PAUSE&#34;" target="startType" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:outgoing>Flow_0u785fq</bpmn:outgoing>
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_1hsjcma" escalationRef="Escalation_2ibu05f" />
+      </bpmn:boundaryEvent>
     </bpmn:subProcess>
     <bpmn:endEvent id="Event_0448lyx">
       <bpmn:incoming>Flow_1q6yzgm</bpmn:incoming>
@@ -207,6 +236,10 @@
     <bpmn:association id="Association_1gfhm9z" associationDirection="None" sourceRef="TextAnnotation_1k3hdyx" targetRef="Activity_0l6srgj" />
     <bpmn:association id="Association_1070joh" associationDirection="None" sourceRef="TextAnnotation_1k3hdyx" targetRef="Activity_0nek8ed" />
     <bpmn:association id="Association_1ei339l" associationDirection="None" sourceRef="TextAnnotation_1k3hdyx" targetRef="Activity_0nio8yg" />
+    <bpmn:textAnnotation id="TextAnnotation_1mcp6iw">
+      <bpmn:text>Можно сделать по аналогии с паузой и успешностью</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0c7njgq" associationDirection="None" sourceRef="Activity_1hr8erd" targetRef="TextAnnotation_1mcp6iw" />
   </bpmn:process>
   <bpmn:message id="Message_2eiqhhi" name="COMPLETE_SLA">
     <bpmn:extensionElements>
@@ -235,19 +268,25 @@
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:escalation id="Escalation_35ul73v" name="STOP_SLA" escalationCode="done" />
+  <bpmn:message id="Message_3ps3h9o" name="PAUSE_SLA">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=processId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:escalation id="Escalation_2ibu05f" name="PAUSE_SLA" escalationCode="pause" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="SLA_PROCESS">
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
         <dc:Bounds x="152" y="472" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0jeswt0_di" bpmnElement="Activity_0jeswt0" isExpanded="true">
-        <dc:Bounds x="260" y="80" width="1340" height="860" />
+        <dc:Bounds x="260" y="80" width="1340" height="1130" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1q06qyh_di" bpmnElement="Event_1q06qyh">
         <dc:Bounds x="292" y="442" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1xj5mwg_di" bpmnElement="Activity_1xj5mwg" isExpanded="true">
-        <dc:Bounds x="875" y="360" width="565" height="550" />
+        <dc:Bounds x="875" y="360" width="565" height="820" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0q1lgqd_di" bpmnElement="Event_0q1lgqd">
         <dc:Bounds x="897" y="432" width="36" height="36" />
@@ -310,6 +349,48 @@
         <di:waypoint x="1258" y="730" />
         <di:waypoint x="1310" y="730" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Activity_0r214dw_di" bpmnElement="Activity_0qu42k4" isExpanded="true">
+        <dc:Bounds x="940" y="920" width="448" height="240" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_06ufk2j_di" bpmnElement="Event_1kd67v9">
+        <dc:Bounds x="1311" y="982" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1294" y="1025" width="70" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0mki9kq_di" bpmnElement="Gateway_0mki9kq" isMarkerVisible="true">
+        <dc:Bounds x="1204" y="975" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0czp1u8" bpmnElement="Activity_122bv5i">
+        <dc:Bounds x="1049" y="960" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1fqw4gf_di" bpmnElement="Event_0gs344r">
+        <dc:Bounds x="962" y="982" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0m4ojqc_di" bpmnElement="Event_0hz25so">
+        <dc:Bounds x="1311" y="1072" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1295" y="1115" width="70" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0ha7s7e_di" bpmnElement="Flow_0ha7s7e">
+        <di:waypoint x="998" y="1000" />
+        <di:waypoint x="1049" y="1000" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0khungj_di" bpmnElement="Flow_0khungj">
+        <di:waypoint x="1254" y="1000" />
+        <di:waypoint x="1311" y="1000" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11kddo2_di" bpmnElement="Flow_11kddo2">
+        <di:waypoint x="1229" y="1025" />
+        <di:waypoint x="1229" y="1090" />
+        <di:waypoint x="1311" y="1090" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0wyldsk_di" bpmnElement="Flow_0wyldsk">
+        <di:waypoint x="1149" y="1000" />
+        <di:waypoint x="1204" y="1000" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_05azbml_di" bpmnElement="Flow_05azbml">
         <di:waypoint x="1128" y="450" />
         <di:waypoint x="1232" y="450" />
@@ -336,10 +417,6 @@
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1455" y="510" width="89" height="40" />
         </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_04za729_di" bpmnElement="Activity_0lkph6m">
-        <dc:Bounds x="855" y="250" width="100" height="80" />
-        <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_0a0bfjm_di" bpmnElement="Gateway_0a0bfjm" isMarkerVisible="true">
         <dc:Bounds x="380" y="435" width="50" height="50" />
@@ -374,14 +451,14 @@
           <dc:Bounds x="1456" y="616" width="87" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0ezj2ut_di" bpmnElement="Event_12c95hk">
-        <dc:Bounds x="1007" y="342" width="36" height="36" />
+      <bpmndi:BPMNShape id="Event_0yjxmti_di" bpmnElement="Event_1dssckq">
+        <dc:Bounds x="1422" y="652" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1wl3vdx_di" bpmnElement="Event_0ifmi8k">
         <dc:Bounds x="1117" y="342" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0yjxmti_di" bpmnElement="Event_1dssckq">
-        <dc:Bounds x="1422" y="652" width="36" height="36" />
+      <bpmndi:BPMNShape id="Event_0ck15my_di" bpmnElement="Event_12c95hk">
+        <dc:Bounds x="1007" y="342" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_0acybgv_di" bpmnElement="Flow_0acybgv">
         <di:waypoint x="810" y="460" />
@@ -393,12 +470,8 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0u785fq_di" bpmnElement="Flow_0u785fq">
         <di:waypoint x="1025" y="342" />
-        <di:waypoint x="1025" y="290" />
-        <di:waypoint x="955" y="290" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_06f5mm3_di" bpmnElement="Flow_06f5mm3">
-        <di:waypoint x="855" y="290" />
-        <di:waypoint x="405" y="290" />
+        <di:waypoint x="1025" y="260" />
+        <di:waypoint x="405" y="260" />
         <di:waypoint x="405" y="435" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_02tiihq_di" bpmnElement="Flow_02tiihq">
@@ -457,6 +530,10 @@
           <dc:Bounds x="1626" y="515" width="89" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0c7njgq_di" bpmnElement="Association_0c7njgq">
+        <di:waypoint x="955" y="171" />
+        <di:waypoint x="1170" y="134" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="BPMNShape_0k3nj3y" bpmnElement="TextAnnotation_1k3hdyx">
         <dc:Bounds x="620" y="310" width="130" height="70" />
         <bpmndi:BPMNLabel />
@@ -481,6 +558,10 @@
         <di:waypoint x="694" y="380" />
         <di:waypoint x="665" y="550" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_1mcp6iw_di" bpmnElement="TextAnnotation_1mcp6iw" bioc:stroke="#831311" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#831311">
+        <dc:Bounds x="1170" y="110" width="99.99156545209178" height="83.67071524966262" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>

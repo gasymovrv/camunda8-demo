@@ -21,13 +21,16 @@ Content-Type: application/json
   }
 }
 
-### Send message 'NEED_WAIT'
+### Send message 'REQUEST_TO_CLIENT'
 POST http://localhost:8080/messages
 Content-Type: application/json
 
 {
-  "msgName": "NEED_WAIT",
-  "correlationKey": "{{processId1}}"
+  "msgName": "REQUEST_TO_CLIENT",
+  "correlationKey": "{{processId1}}",
+  "vars": {
+    "requestToClientId": "{{processId1}}_client_req_4"
+  }
 }
 
 ### Send message 'CLIENT_RESPONSE'
@@ -36,7 +39,7 @@ Content-Type: application/json
 
 {
   "msgName": "CLIENT_RESPONSE",
-  "correlationKey": "{{processId1}}"
+  "correlationKey": "{{processId1}}_client_req_4"
 }
 
 ### Send message 'CREATE_TASK'
