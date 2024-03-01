@@ -4,6 +4,8 @@ import io.camunda.zeebe.client.api.response.ActivatedJob
 import io.camunda.zeebe.client.api.response.CompleteJobResponse
 import io.camunda.zeebe.client.api.response.FailJobResponse
 import io.camunda.zeebe.client.api.worker.JobClient
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 
@@ -26,7 +28,7 @@ object ZeebeJobUtils {
         return completeCommandAction.send()
             .whenComplete { _, err ->
                 if (err == null) {
-                    log.info(
+                    log.debug(
                         "$LOG_PREFIX Completed job ${job.type}, " +
                             JOB_INFO_MSG.format(job.key, job.processInstanceKey)
                     )
@@ -97,12 +99,45 @@ object ZeebeJobUtils {
             }.toCompletableFuture()
     }
 
+    private suspend fun failWithDelay(
+        e: Exception,
+        client: JobClient,
+        job: ActivatedJob
+    ) {
+        val remainRetries = job.retries - 1
+        if (remainRetries > 0) {
+            // It is required to delay before sending fail,
+            // otherwise another job client can start new try without delay
+            delay(5000)
+        }
+        sendFailJob(e, client, job, remainRetries)
+    }
+
+    fun <T> withJobHandling(
+        client: JobClient,
+        job: ActivatedJob,
+        executeJobAction: suspend () -> T
+    ) = runBlocking {
+        logStartJob(job)
+        try {
+            sendCompleteJob(client, job, executeJobAction())
+        } catch (e: RetryableJobException) {
+            logJobError(job, e)
+            failWithDelay(e, client, job)
+        } catch (e: Exception) {
+            logJobError(job, e)
+            sendJobError(e, client, job)
+        } finally {
+            logEndJob(job)
+        }
+    }
+
     fun logStartJob(job: ActivatedJob) {
-        log.info("$LOG_PREFIX Start ${job.type}, ${JOB_INFO_MSG.format(job.key, job.processInstanceKey)}")
+        log.debug("$LOG_PREFIX Start ${job.type}, ${JOB_INFO_MSG.format(job.key, job.processInstanceKey)}")
     }
 
     fun logEndJob(job: ActivatedJob) {
-        log.info("$LOG_PREFIX End ${job.type}, ${JOB_INFO_MSG.format(job.key, job.processInstanceKey)}")
+        log.debug("$LOG_PREFIX End ${job.type}, ${JOB_INFO_MSG.format(job.key, job.processInstanceKey)}")
     }
 
     fun logJobError(job: ActivatedJob, e: Throwable) {

@@ -29,7 +29,7 @@ Content-Type: application/json
   "msgName": "REQUEST_TO_CLIENT",
   "correlationKey": "{{processId1}}",
   "vars": {
-    "requestToClientId": "{{processId1}}_client_req_4"
+    "requestToClientId": "{{processId1}}_client_req_1"
   }
 }
 
@@ -39,7 +39,7 @@ Content-Type: application/json
 
 {
   "msgName": "CLIENT_RESPONSE",
-  "correlationKey": "{{processId1}}_client_req_4"
+  "correlationKey": "{{processId1}}_client_req_1"
 }
 
 ### Send message 'CREATE_TASK'

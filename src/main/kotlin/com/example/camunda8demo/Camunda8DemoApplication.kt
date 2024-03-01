@@ -8,7 +8,14 @@ import org.springframework.scheduling.annotation.EnableAsync
 @EnableAsync
 @SpringBootApplication
 //@Deployment(resources = ["classpath:/bpmn/**/*.bpmn"])
-@Deployment(resources = ["classpath:/bpmn/router-process.bpmn", "classpath:/bpmn/sla-process.bpmn", "classpath:/bpmn/simple-process.bpmn"])
+@Deployment(
+    resources = [
+        "classpath:/bpmn/router-process.bpmn",
+        "classpath:/bpmn/sla-process.bpmn",
+        "classpath:/bpmn/simple-process.bpmn",
+        "classpath:/bpmn/client-response-process.bpmn"
+    ]
+)
 class Camunda8DemoApplication
 
 fun main(args: Array<String>) {

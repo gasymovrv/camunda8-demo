@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_04o3ktx"
+                  targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.20.0"
+                  modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.4.0">
+  <bpmn:process id="CLIENT_RESPONSE_PROCESS" name="Cообщение об истечении SLA" isExecutable="true">
+    <bpmn:startEvent id="Event_1uj89if">
+      <bpmn:outgoing>Flow_15y7804</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:intermediateCatchEvent id="Event_09vkm1u" name="Ждем ответ от клиента">
+      <bpmn:incoming>Flow_15t2e4l</bpmn:incoming>
+      <bpmn:outgoing>Flow_01j3qkd</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1tb633t" messageRef="Message_3d5mnfa" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateThrowEvent id="Event_11xfscl" name="Ставим SLA на паузу">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="SendPauseSlaMsg" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=&#34;SLA1_&#34; + processId" target="slaProcessId" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1lqtnv9</bpmn:incoming>
+      <bpmn:outgoing>Flow_15t2e4l</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1jb9esl" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:intermediateThrowEvent id="Event_18lhqlp" name="Возобновить SLA">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="SendResumeSlaMsg" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=&#34;SLA1_&#34; + processId" target="slaProcessId" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1qy2ol8</bpmn:incoming>
+      <bpmn:outgoing>Flow_11npjqp</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1tor3s6" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:endEvent id="Event_01le1mo">
+      <bpmn:incoming>Flow_11npjqp</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Activity_1ruycfb" name="Отправить запрос клиенту">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="SendRequestToClient" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_15y7804</bpmn:incoming>
+      <bpmn:outgoing>Flow_1lqtnv9</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_0bkhe0p" name="Обработать ответ клиента">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="HandleClientResponse" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_01j3qkd</bpmn:incoming>
+      <bpmn:outgoing>Flow_1qy2ol8</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_15y7804" sourceRef="Event_1uj89if" targetRef="Activity_1ruycfb" />
+    <bpmn:sequenceFlow id="Flow_15t2e4l" sourceRef="Event_11xfscl" targetRef="Event_09vkm1u" />
+    <bpmn:sequenceFlow id="Flow_01j3qkd" sourceRef="Event_09vkm1u" targetRef="Activity_0bkhe0p" />
+    <bpmn:sequenceFlow id="Flow_1lqtnv9" sourceRef="Activity_1ruycfb" targetRef="Event_11xfscl" />
+    <bpmn:sequenceFlow id="Flow_1qy2ol8" sourceRef="Activity_0bkhe0p" targetRef="Event_18lhqlp" />
+    <bpmn:sequenceFlow id="Flow_11npjqp" sourceRef="Event_18lhqlp" targetRef="Event_01le1mo" />
+    <bpmn:textAnnotation id="TextAnnotation_0vc7upf">
+      <bpmn:text>Только в отдельном файле call activity работает нормально при асинхронной нагрузке</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0k9mbqa" associationDirection="None" sourceRef="Event_09vkm1u" targetRef="TextAnnotation_0vc7upf" />
+  </bpmn:process>
+  <bpmn:message id="Message_2eiqhhi" name="COMPLETE_SLA">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=processId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:escalation id="Escalation_208gtht" name="SLA_EXPIRED_LINK" escalationCode="=processId" />
+  <bpmn:message id="Message_0sonip5" name="PAUSE_SLA_INTERNAL">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=processId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_2bvbg8k" name="RESUME_SLA">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=processId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_3umc1fk" name="CHECK_SLA">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=processId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_1hndihc" name="CHANGE_SLA">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=processId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:escalation id="Escalation_35ul73v" name="STOP_SLA" escalationCode="done" />
+  <bpmn:message id="Message_3ps3h9o" name="PAUSE_SLA">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=processId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:escalation id="Escalation_2ibu05f" name="PAUSE_SLA" escalationCode="pause" />
+  <bpmn:message id="Message_0hfjdam" name="STOP_SLA">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=processId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:escalation id="Escalation_0dubmtp" name="CHANGE_SLA" escalationCode="change" />
+  <bpmn:message id="Message_3d5mnfa" name="CLIENT_RESPONSE">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=key" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="CLIENT_RESPONSE_PROCESS">
+      <bpmndi:BPMNShape id="BPMNShape_0hs41sc" bpmnElement="Event_1uj89if">
+        <dc:Bounds x="152" y="262" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1nb7c2s" bpmnElement="Event_09vkm1u">
+        <dc:Bounds x="485" y="262" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="466" y="305" width="75" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1gqt6t2" bpmnElement="Event_11xfscl">
+        <dc:Bounds x="387" y="262" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="367" y="305" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1m425nv" bpmnElement="Event_18lhqlp">
+        <dc:Bounds x="725" y="262" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="713" y="305" width="67" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_153son2" bpmnElement="Event_01le1mo">
+        <dc:Bounds x="805" y="262" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1fedhgf" bpmnElement="Activity_1ruycfb">
+        <dc:Bounds x="233" y="240" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_16ne129" bpmnElement="Activity_0bkhe0p">
+        <dc:Bounds x="573" y="240" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0k9mbqa_di" bpmnElement="Association_0k9mbqa">
+        <di:waypoint x="502" y="262" />
+        <di:waypoint x="491" y="207" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15y7804_di" bpmnElement="Flow_15y7804">
+        <di:waypoint x="188" y="280" />
+        <di:waypoint x="233" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_13yx7wo" bpmnElement="Flow_15t2e4l">
+        <di:waypoint x="423" y="280" />
+        <di:waypoint x="485" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1gn3cq1" bpmnElement="Flow_01j3qkd">
+        <di:waypoint x="521" y="280" />
+        <di:waypoint x="573" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0y0dxyk" bpmnElement="Flow_1lqtnv9">
+        <di:waypoint x="333" y="280" />
+        <di:waypoint x="387" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0g3kz1u" bpmnElement="Flow_1qy2ol8">
+        <di:waypoint x="673" y="280" />
+        <di:waypoint x="725" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1n3c3bh" bpmnElement="Flow_11npjqp">
+        <di:waypoint x="761" y="280" />
+        <di:waypoint x="805" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_0vc7upf_di" bpmnElement="TextAnnotation_0vc7upf">
+        <dc:Bounds x="420" y="80" width="99.99274099883856" height="126.59698025551684" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
