@@ -44,71 +44,121 @@ class RouterSlaWorkers(private val zeebe: ZeebeClient) {
         log.info("=============== HandleClientResponse, processId: $processId, requestToClientId: $key")
     }
 
+    /**
+     *  Будет использоваться месседж-воркер за пределами схемы SLA_PROCESS.
+     *  Лучше делать так чтобы избежать отправки лишних сообщений на паузу SLA когда он в некорректном статусе.
+     *  А также не придется усложнять схему SLA_PROCESS лишним event-subprocess-ом
+     */
     @JobWorker(type = "SendPauseSlaMsg", autoComplete = false)
     fun handleSendPauseSlaMsg(
         jobClient: JobClient,
         job: ActivatedJob,
         @Variable slaProcessId: String
     ) = withJobHandling(jobClient, job) {
-        val readyToPause = try {
-            slaDatabase.computeIfPresent(slaProcessId) { _, v ->
+        val pausedSla = try {
+            slaDatabase.computeIfPresent(slaProcessId) { k, v ->
                 if (v.status == SlaStatus.PAUSED)
                     throw IllegalStateException("SLA already paused")
-                else
-                    v.copy(status = SlaStatus.PAUSED)
+
+                val expirationDate = v.expirationDate ?: throw IllegalStateException("SLA expirationDate is null")
+                val newExpirationDate = LocalDateTime.parse(expirationDate, pattern)
+                val remainingMs =
+                    newExpirationDate.toInstant(ZoneOffset.UTC).toEpochMilli() - Instant.now().toEpochMilli()
+
+                Sla(
+                    id = k,
+                    status = SlaStatus.PAUSED,
+                    remainingMs = remainingMs
+                )
             } ?: throw RetryableJobException("Not found SLA, maybe it hasn't created yet")
-            true
         } catch (e: IllegalStateException) {
-            false
+            log.warn("=============== ERROR SendPauseSlaMsg: $e, slaProcessId: $slaProcessId, processInstanceKey: ${job.processInstanceKey}")
+            null
         }
 
-        if (readyToPause) {
+        if (pausedSla != null) {
             zeebe.newPublishMessageCommand()
                 .messageName("PAUSE_SLA")
                 .correlationKey(slaProcessId)
+                .variables(mapOf("sla" to pausedSla))
                 .send()
                 .thenAccept { _ ->
                     log.info("=============== SendPauseSlaMsg: sent, msgName = 'PAUSE_SLA', correlationKey = $slaProcessId")
                 }
                 .await()
-        } else {
-            log.warn("=============== SendPauseSlaMsg: already paused, slaProcessId: $slaProcessId")
         }
         return@withJobHandling
     }
 
+    /**
+     *  Будет использоваться месседж-воркер за пределами схемы SLA_PROCESS.
+     *  Лучше делать так чтобы избежать отправки лишних сообщений на возобновление SLA когда он в некорректном статусе.
+     *  А также не придется усложнять схему SLA_PROCESS лишним event-subprocess-ом
+     */
     @JobWorker(type = "SendResumeSlaMsg", autoComplete = false)
     fun handleSendResumeSlaMsg(
         jobClient: JobClient,
         job: ActivatedJob,
         @Variable slaProcessId: String
     ) = withJobHandling(jobClient, job) {
-        val readyToResume = try {
-            slaDatabase.computeIfPresent(slaProcessId) { _, v ->
+        val resumedSla = try {
+            slaDatabase.computeIfPresent(slaProcessId) { k, v ->
                 if (v.status != SlaStatus.PAUSED)
                     throw IllegalStateException("SLA already resumed")
-                else
-                    v.copy(status = SlaStatus.RUNNING)
+
+                val remainingMs = v.remainingMs ?: throw IllegalStateException("SLA remainingMs is null")
+                val warnDate = Instant.now().plusMillis(remainingMs / 2)
+                val expirationDate = Instant.now().plusMillis(remainingMs)
+
+                Sla(
+                    id = k,
+                    status = SlaStatus.RUNNING,
+                    warnDate = LocalDateTime.ofInstant(warnDate, ZoneId.of("UTC")).format(pattern),
+                    expirationDate = LocalDateTime.ofInstant(expirationDate, ZoneId.of("UTC")).format(pattern),
+                    startTime = LocalDateTime.now().format(pattern),
+                )
             } ?: throw RetryableJobException("Not found SLA, maybe it hasn't created yet")
-            true
         } catch (e: IllegalStateException) {
-            false
+            log.warn("=============== SendResumeSlaMsg: already resumed, slaProcessId: $slaProcessId")
+            null
         }
 
-        if (readyToResume) {
+        if (resumedSla != null) {
             zeebe.newPublishMessageCommand()
                 .messageName("RESUME_SLA")
                 .correlationKey(slaProcessId)
+                .variables(mapOf("sla" to resumedSla))
                 .send()
                 .thenAccept { _ ->
-                    log.info("=============== SendResumeSlaMsg: sent, msgName = 'PAUSE_SLA', correlationKey = $slaProcessId")
+                    log.info("=============== SendResumeSlaMsg: sent, msgName = 'RESUME_SLA', correlationKey = $slaProcessId")
                 }
                 .await()
-        } else {
-            log.warn("=============== SendResumeSlaMsg: already resumed, slaProcessId: $slaProcessId")
         }
         return@withJobHandling
     }
+
+// Сделать по аналогии с handleSendPauseSlaMsg и handleSendResumeSlaMsg
+
+//    @JobWorker(type = "ChangeSla", autoComplete = false)
+//    fun handleChangeSla(
+//        jobClient: JobClient,
+//        job: ActivatedJob,
+//        @Variable processId: String,
+//    ) = withJobHandling(jobClient, job) {
+//        val savedSla = slaDatabase.computeIfPresent(processId) { k, v ->
+//            val startTime = LocalDateTime.parse(v.startTime, pattern)
+//            val spentMs = Instant.now().toEpochMilli() - startTime.toInstant(ZoneOffset.UTC).toEpochMilli()
+//
+//            Sla(
+//                id = k,
+//                status = SlaStatus.CHANGED,
+//                spentMs = spentMs
+//            )
+//        }!!
+//        log.info("=============== ChangeSla: $savedSla")
+//
+//        mapOf("sla" to sla)
+//    }
 
     @JobWorker(type = "CreateSLA", autoComplete = false)
     fun handleCreateSLA(
@@ -155,73 +205,6 @@ class RouterSlaWorkers(private val zeebe: ZeebeClient) {
             )
         }!!
         log.info("=============== CreateRecalculatedSLA: $savedSla")
-
-        mapOf("sla" to savedSla)
-    }
-
-    @JobWorker(type = "ResumeSla", autoComplete = false)
-    fun handleResumeSla(
-        jobClient: JobClient,
-        job: ActivatedJob,
-        @Variable processId: String
-    ) = withJobHandling(jobClient, job) {
-        val sla = slaDatabase.computeIfPresent(processId) { k, v ->
-            val remainingMs = v.remainingMs!!
-
-            val warnDate = Instant.now().plusMillis(remainingMs / 2)
-            val expirationDate = Instant.now().plusMillis(remainingMs)
-
-            Sla(
-                id = k,
-                status = SlaStatus.RUNNING,
-                warnDate = LocalDateTime.ofInstant(warnDate, ZoneId.of("UTC")).format(pattern),
-                expirationDate = LocalDateTime.ofInstant(expirationDate, ZoneId.of("UTC")).format(pattern),
-                startTime = LocalDateTime.now().format(pattern),
-            )
-        }!!
-        log.info("=============== ResumeSla: $sla")
-
-        mapOf("sla" to sla)
-    }
-
-    @JobWorker(type = "ChangeSla", autoComplete = false)
-    fun handleChangeSla(
-        jobClient: JobClient,
-        job: ActivatedJob,
-        @Variable processId: String,
-    ) = withJobHandling(jobClient, job) {
-        val savedSla = slaDatabase.computeIfPresent(processId) { k, v ->
-            val startTime = LocalDateTime.parse(v.startTime, pattern)
-            val spentMs = Instant.now().toEpochMilli() - startTime.toInstant(ZoneOffset.UTC).toEpochMilli()
-
-            Sla(
-                id = k,
-                status = SlaStatus.CHANGED,
-                spentMs = spentMs
-            )
-        }!!
-        log.info("=============== ChangeSla: $savedSla")
-
-        mapOf("sla" to sla)
-    }
-
-    @JobWorker(type = "PauseSla", autoComplete = false)
-    fun handlePauseSla(
-        jobClient: JobClient,
-        job: ActivatedJob,
-        @Variable processId: String,
-    ) = withJobHandling(jobClient, job) {
-        val savedSla = slaDatabase.computeIfPresent(processId) { k, v ->
-            val expirationDate = LocalDateTime.parse(v.expirationDate, pattern)
-            val remainingMs = expirationDate.toInstant(ZoneOffset.UTC).toEpochMilli() - Instant.now().toEpochMilli()
-
-            Sla(
-                id = k,
-                status = SlaStatus.PAUSED,
-                remainingMs = remainingMs
-            )
-        }!!
-        log.info("=============== PauseSla: $savedSla")
 
         mapOf("sla" to savedSla)
     }
