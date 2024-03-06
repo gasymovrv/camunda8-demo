@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
-class RouterSlaWorkers(
+class RoutingWorkers(
     private val zeebe: ZeebeClient,
     private val slaService: SlaService
 ) {
