@@ -90,7 +90,7 @@
         <di:waypoint x="325" y="117" />
         <di:waypoint x="530" y="117" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="407" y="83" width="25" height="14" />
+          <dc:Bounds x="407" y="93" width="25" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_12u9qnd_di" bpmnElement="Flow_12u9qnd">

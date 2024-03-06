@@ -1,6 +1,6 @@
-package com.example.camunda8demo
+package com.example.camunda8demo.worker
 
-import com.example.camunda8demo.util.RetryableJobException
+import com.example.camunda8demo.service.SlaService
 import com.example.camunda8demo.util.ZeebeJobUtils.withJobHandling
 import io.camunda.zeebe.client.ZeebeClient
 import io.camunda.zeebe.client.api.response.ActivatedJob
@@ -11,18 +11,13 @@ import kotlinx.coroutines.future.await
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.time.ZoneOffset
-import java.util.concurrent.ConcurrentHashMap
 
 @Component
-class RouterSlaWorkers(private val zeebe: ZeebeClient) {
+class RouterSlaWorkers(
+    private val zeebe: ZeebeClient,
+    private val slaService: SlaService
+) {
     private val log: Logger = LoggerFactory.getLogger(javaClass)
-    private val slaDatabase = ConcurrentHashMap<String, Sla>()
-    private val sla = 60L
-    private val recalcSla = 120L
 
     @JobWorker(type = "SendRequestToClient", autoComplete = false)
     fun handleSendRequestToClient(
@@ -31,7 +26,7 @@ class RouterSlaWorkers(private val zeebe: ZeebeClient) {
         @Variable processId: String,
         @Variable key: String
     ) = withJobHandling(jobClient, job) {
-        log.info("=============== SendRequestToClient, processId: $processId, requestToClientId: $key")
+        log.debug("=============== SendRequestToClient, processId: $processId, requestToClientId: $key")
     }
 
     @JobWorker(type = "HandleClientResponse", autoComplete = false)
@@ -41,7 +36,7 @@ class RouterSlaWorkers(private val zeebe: ZeebeClient) {
         @Variable processId: String,
         @Variable key: String
     ) = withJobHandling(jobClient, job) {
-        log.info("=============== HandleClientResponse, processId: $processId, requestToClientId: $key")
+        log.debug("=============== HandleClientResponse, processId: $processId, requestToClientId: $key")
     }
 
     /**
@@ -56,23 +51,9 @@ class RouterSlaWorkers(private val zeebe: ZeebeClient) {
         @Variable slaProcessId: String
     ) = withJobHandling(jobClient, job) {
         val pausedSla = try {
-            slaDatabase.computeIfPresent(slaProcessId) { k, v ->
-                if (v.status == SlaStatus.PAUSED)
-                    throw IllegalStateException("SLA already paused")
-
-                val expirationDate = v.expirationDate ?: throw IllegalStateException("SLA expirationDate is null")
-                val newExpirationDate = LocalDateTime.parse(expirationDate, pattern)
-                val remainingMs =
-                    newExpirationDate.toInstant(ZoneOffset.UTC).toEpochMilli() - Instant.now().toEpochMilli()
-
-                Sla(
-                    id = k,
-                    status = SlaStatus.PAUSED,
-                    remainingMs = remainingMs
-                )
-            } ?: throw RetryableJobException("Not found SLA, maybe it hasn't created yet")
+            slaService.pause(slaProcessId)
         } catch (e: IllegalStateException) {
-            log.warn("=============== ERROR SendPauseSlaMsg: $e, slaProcessId: $slaProcessId, processInstanceKey: ${job.processInstanceKey}")
+            log.warn("=============== WARN SendPauseSlaMsg: $e, slaProcessId: $slaProcessId, processInstanceKey: ${job.processInstanceKey}")
             null
         }
 
@@ -102,24 +83,9 @@ class RouterSlaWorkers(private val zeebe: ZeebeClient) {
         @Variable slaProcessId: String
     ) = withJobHandling(jobClient, job) {
         val resumedSla = try {
-            slaDatabase.computeIfPresent(slaProcessId) { k, v ->
-                if (v.status != SlaStatus.PAUSED)
-                    throw IllegalStateException("SLA already resumed")
-
-                val remainingMs = v.remainingMs ?: throw IllegalStateException("SLA remainingMs is null")
-                val warnDate = Instant.now().plusMillis(remainingMs / 2)
-                val expirationDate = Instant.now().plusMillis(remainingMs)
-
-                Sla(
-                    id = k,
-                    status = SlaStatus.RUNNING,
-                    warnDate = LocalDateTime.ofInstant(warnDate, ZoneId.of("UTC")).format(pattern),
-                    expirationDate = LocalDateTime.ofInstant(expirationDate, ZoneId.of("UTC")).format(pattern),
-                    startTime = LocalDateTime.now().format(pattern),
-                )
-            } ?: throw RetryableJobException("Not found SLA, maybe it hasn't created yet")
+            slaService.resume(slaProcessId)
         } catch (e: IllegalStateException) {
-            log.warn("=============== SendResumeSlaMsg: already resumed, slaProcessId: $slaProcessId")
+            log.warn("=============== WARN SendResumeSlaMsg: already resumed, slaProcessId: $slaProcessId")
             null
         }
 
@@ -166,18 +132,7 @@ class RouterSlaWorkers(private val zeebe: ZeebeClient) {
         job: ActivatedJob,
         @Variable processId: String
     ) = withJobHandling(jobClient, job) {
-        val now = LocalDateTime.now(ZoneId.of("UTC"))
-        val warnDate = now.plusSeconds(sla / 2)
-        val expirationDate = now.plusSeconds(sla)
-
-        val savedSla = Sla(
-            id = processId,
-            status = SlaStatus.RUNNING,
-            warnDate = warnDate.format(pattern),
-            expirationDate = expirationDate.format(pattern),
-            startTime = LocalDateTime.now().format(pattern),
-        )
-        slaDatabase[processId] = savedSla
+        val savedSla = slaService.create(processId)
         log.info("=============== CreateSLA: $savedSla")
 
         mapOf("sla" to savedSla)
@@ -189,21 +144,7 @@ class RouterSlaWorkers(private val zeebe: ZeebeClient) {
         job: ActivatedJob,
         @Variable processId: String
     ) = withJobHandling(jobClient, job) {
-        val savedSla = slaDatabase.computeIfPresent(processId) { k, v ->
-            if (v.status != SlaStatus.CHANGED) throw IllegalStateException("SLA '$v' must be in status CHANGED")
-            val spentMs = v.spentMs!!
-
-            val warnDate = Instant.now().plusSeconds(recalcSla / 2).minusMillis(spentMs)
-            val expirationDate = Instant.now().plusSeconds(recalcSla).minusMillis(spentMs)
-
-            Sla(
-                id = k,
-                status = SlaStatus.RUNNING,
-                warnDate = LocalDateTime.ofInstant(warnDate, ZoneId.of("UTC")).format(pattern),
-                expirationDate = LocalDateTime.ofInstant(expirationDate, ZoneId.of("UTC")).format(pattern),
-                startTime = LocalDateTime.now().format(pattern),
-            )
-        }!!
+        val savedSla = slaService.recalculate(processId)
         log.info("=============== CreateRecalculatedSLA: $savedSla")
 
         mapOf("sla" to savedSla)
@@ -217,9 +158,9 @@ class RouterSlaWorkers(private val zeebe: ZeebeClient) {
         @Variable completed: Boolean? = null
     ) = withJobHandling(jobClient, job) {
         val savedSla = if (completed == true)
-            slaDatabase.computeIfPresent(processId) { _, v -> v.copy(status = SlaStatus.COMPLETED) }!!
+            slaService.complete(processId)
         else
-            slaDatabase[processId]
+            slaService.get(processId)
         log.info("=============== CheckSla: $savedSla")
 
         mapOf("sla" to savedSla)
@@ -231,7 +172,7 @@ class RouterSlaWorkers(private val zeebe: ZeebeClient) {
         job: ActivatedJob,
         @Variable processId: String
     ) = withJobHandling(jobClient, job) {
-        val savedSla = slaDatabase.computeIfPresent(processId) { _, v -> v.copy(status = SlaStatus.EXPIRED) }!!
+        val savedSla = slaService.expire(processId)
         log.info("=============== SlaExpired: $savedSla")
 
         mapOf("sla" to savedSla)
@@ -246,17 +187,5 @@ class RouterSlaWorkers(private val zeebe: ZeebeClient) {
         log.info("=============== SlaWarn")
     }
 
-    data class Sla(
-        var id: String,
-        var status: SlaStatus,
-        var expirationDate: String? = null,
-        var warnDate: String? = null,
-        var startTime: String? = null,
-        var remainingMs: Long? = null,
-        var spentMs: Long? = null,
-    )
 
-    enum class SlaStatus {
-        RUNNING, PAUSED, EXPIRED, COMPLETED, CHANGED
-    }
 }

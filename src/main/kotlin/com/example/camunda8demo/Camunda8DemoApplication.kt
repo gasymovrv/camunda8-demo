@@ -13,7 +13,7 @@ import org.springframework.scheduling.annotation.EnableAsync
         "classpath:/bpmn/router-process.bpmn",
         "classpath:/bpmn/sla-process.bpmn",
         "classpath:/bpmn/simple-process.bpmn",
-        "classpath:/bpmn/client-response-process.bpmn"
+        "classpath:/bpmn/request-to-client-process.bpmn"
     ]
 )
 class Camunda8DemoApplication

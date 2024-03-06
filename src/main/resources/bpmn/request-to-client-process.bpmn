@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_04o3ktx" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.20.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.4.0">
-  <bpmn:process id="CLIENT_RESPONSE_PROCESS" name="Cообщение об истечении SLA" isExecutable="true">
+  <bpmn:process id="REQUEST_TO_CLIENT_PROCESS" name="Cообщение об истечении SLA" isExecutable="true">
     <bpmn:startEvent id="Event_1uj89if">
       <bpmn:outgoing>Flow_15y7804</bpmn:outgoing>
     </bpmn:startEvent>
@@ -55,9 +55,9 @@
     <bpmn:sequenceFlow id="Flow_1qy2ol8" sourceRef="Activity_0bkhe0p" targetRef="Event_18lhqlp" />
     <bpmn:sequenceFlow id="Flow_11npjqp" sourceRef="Event_18lhqlp" targetRef="Event_01le1mo" />
     <bpmn:textAnnotation id="TextAnnotation_0vc7upf">
-      <bpmn:text>Только в отдельном файле call activity работает нормально при асинхронной нагрузке</bpmn:text>
+      <bpmn:text>Если сделать как event-subprocess внутри родительского, то в этом месте в момент прихода нового подпроцесса может перетереться переменная, т.к. скоуп у ивент процессов общий с родительским</bpmn:text>
     </bpmn:textAnnotation>
-    <bpmn:association id="Association_0k9mbqa" associationDirection="None" sourceRef="Event_09vkm1u" targetRef="TextAnnotation_0vc7upf" />
+    <bpmn:association id="Association_14dl83r" associationDirection="None" sourceRef="TextAnnotation_0vc7upf" targetRef="Event_09vkm1u" />
   </bpmn:process>
   <bpmn:message id="Message_2eiqhhi" name="COMPLETE_SLA">
     <bpmn:extensionElements>
@@ -104,68 +104,68 @@
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="CLIENT_RESPONSE_PROCESS">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="REQUEST_TO_CLIENT_PROCESS">
       <bpmndi:BPMNShape id="BPMNShape_0hs41sc" bpmnElement="Event_1uj89if">
-        <dc:Bounds x="152" y="262" width="36" height="36" />
+        <dc:Bounds x="152" y="202" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="BPMNShape_1nb7c2s" bpmnElement="Event_09vkm1u">
-        <dc:Bounds x="485" y="262" width="36" height="36" />
+        <dc:Bounds x="485" y="202" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="466" y="305" width="75" height="27" />
+          <dc:Bounds x="466" y="245" width="75" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="BPMNShape_1gqt6t2" bpmnElement="Event_11xfscl">
-        <dc:Bounds x="387" y="262" width="36" height="36" />
+        <dc:Bounds x="387" y="202" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="367" y="305" width="78" height="27" />
+          <dc:Bounds x="367" y="245" width="78" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="BPMNShape_1m425nv" bpmnElement="Event_18lhqlp">
-        <dc:Bounds x="725" y="262" width="36" height="36" />
+        <dc:Bounds x="725" y="202" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="714" y="305" width="66" height="27" />
+          <dc:Bounds x="714" y="245" width="66" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="BPMNShape_153son2" bpmnElement="Event_01le1mo">
-        <dc:Bounds x="805" y="262" width="36" height="36" />
+        <dc:Bounds x="805" y="202" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="BPMNShape_1fedhgf" bpmnElement="Activity_1ruycfb">
-        <dc:Bounds x="233" y="240" width="100" height="80" />
+        <dc:Bounds x="233" y="180" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="BPMNShape_16ne129" bpmnElement="Activity_0bkhe0p">
-        <dc:Bounds x="573" y="240" width="100" height="80" />
+        <dc:Bounds x="573" y="180" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="Association_0k9mbqa_di" bpmnElement="Association_0k9mbqa">
-        <di:waypoint x="510" y="264" />
-        <di:waypoint x="523" y="207" />
+      <bpmndi:BPMNEdge id="Association_14dl83r_di" bpmnElement="Association_14dl83r">
+        <di:waypoint x="523" y="150" />
+        <di:waypoint x="508" y="203" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_15y7804_di" bpmnElement="Flow_15y7804">
-        <di:waypoint x="188" y="280" />
-        <di:waypoint x="233" y="280" />
+        <di:waypoint x="188" y="220" />
+        <di:waypoint x="233" y="220" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="BPMNEdge_13yx7wo" bpmnElement="Flow_15t2e4l">
-        <di:waypoint x="423" y="280" />
-        <di:waypoint x="485" y="280" />
+        <di:waypoint x="423" y="220" />
+        <di:waypoint x="485" y="220" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="BPMNEdge_1gn3cq1" bpmnElement="Flow_01j3qkd">
-        <di:waypoint x="521" y="280" />
-        <di:waypoint x="573" y="280" />
+        <di:waypoint x="521" y="220" />
+        <di:waypoint x="573" y="220" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="BPMNEdge_0y0dxyk" bpmnElement="Flow_1lqtnv9">
-        <di:waypoint x="333" y="280" />
-        <di:waypoint x="387" y="280" />
+        <di:waypoint x="333" y="220" />
+        <di:waypoint x="387" y="220" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="BPMNEdge_0g3kz1u" bpmnElement="Flow_1qy2ol8">
-        <di:waypoint x="673" y="280" />
-        <di:waypoint x="725" y="280" />
+        <di:waypoint x="673" y="220" />
+        <di:waypoint x="725" y="220" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="BPMNEdge_1n3c3bh" bpmnElement="Flow_11npjqp">
-        <di:waypoint x="761" y="280" />
-        <di:waypoint x="805" y="280" />
+        <di:waypoint x="761" y="220" />
+        <di:waypoint x="805" y="220" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="TextAnnotation_0vc7upf_di" bpmnElement="TextAnnotation_0vc7upf">
-        <dc:Bounds x="480" y="80" width="100" height="127" />
+        <dc:Bounds x="370" y="80" width="325" height="70" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>

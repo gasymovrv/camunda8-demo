@@ -1,5 +1,6 @@
-package com.example.camunda8demo
+package com.example.camunda8demo.controller
 
+import com.example.camunda8demo.worker.SystemWorkers
 import io.camunda.zeebe.client.ZeebeClient
 import io.camunda.zeebe.client.api.response.DeploymentEvent
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent
@@ -16,7 +17,10 @@ import org.springframework.web.bind.annotation.RestController
 import java.util.concurrent.CompletionStage
 
 @RestController
-class Controller(private val zeebe: ZeebeClient) {
+class Controller(
+    private val zeebe: ZeebeClient,
+    private val systemWorkers: SystemWorkers
+) {
 
     @PostMapping("/processes")
     fun createInstance(@RequestBody createInstanceRequest: CreateInstanceRequest): CompletionStage<CreateInstanceResponse> {
@@ -107,6 +111,33 @@ class Controller(private val zeebe: ZeebeClient) {
             }.exceptionally {
                 error(it)
             }
+    }
+
+    @GetMapping("/execution-time/average")
+    fun executionTimeAverage() =
+        """
+        Average execution time: ${systemWorkers.instancesDurationsMs.values.average() / 1000} seconds.
+        Processes count: ${systemWorkers.instancesDurationsMs.size}
+        """.trimIndent()
+
+    @GetMapping("/execution-time/max")
+    fun executionTimeMax() =
+        """
+        Max execution time: ${systemWorkers.instancesDurationsMs.values.max() / 1000} seconds.
+        Processes count: ${systemWorkers.instancesDurationsMs.size}
+        """.trimIndent()
+
+    @GetMapping("/execution-time/min")
+    fun executionTimeMin() =
+        """
+        Min execution time: ${systemWorkers.instancesDurationsMs.values.min() / 1000} seconds.
+        Processes count: ${systemWorkers.instancesDurationsMs.size}
+        """.trimIndent()
+
+    @DeleteMapping("/execution-time")
+    fun executionTimeClear() {
+        systemWorkers.instancesDurationsMs.clear()
+        println("Execution time measures cleared")
     }
 }
 

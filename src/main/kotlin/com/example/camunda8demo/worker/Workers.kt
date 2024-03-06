@@ -1,4 +1,4 @@
-package com.example.camunda8demo
+package com.example.camunda8demo.worker
 
 import com.example.camunda8demo.util.ZeebeJobUtils
 import io.camunda.zeebe.client.api.response.ActivatedJob

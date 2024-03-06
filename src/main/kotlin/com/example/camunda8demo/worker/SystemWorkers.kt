@@ -1,5 +1,6 @@
-package com.example.camunda8demo
+package com.example.camunda8demo.worker
 
+import com.example.camunda8demo.pattern
 import com.example.camunda8demo.util.ZeebeJobUtils.withJobHandling
 import io.camunda.zeebe.client.ZeebeClient
 import io.camunda.zeebe.client.api.response.ActivatedJob
@@ -19,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap
 @Component
 class SystemWorkers(private val zeebe: ZeebeClient) {
     val log: Logger = LoggerFactory.getLogger(javaClass)
-    val instancesDurationsMs: MutableMap<Long, Long> = ConcurrentHashMap()
+    val instancesDurationsMs = ConcurrentHashMap<Long, Long>()
 
     @JobWorker(type = "SendMsg", autoComplete = false)
     fun handleSendMsg(
@@ -37,7 +38,7 @@ class SystemWorkers(private val zeebe: ZeebeClient) {
             .variables(others)
             .send()
             .thenAccept { _ ->
-                log.info("=============== SendMsg, msgName = $msgName, correlationKey = $correlationKey, others = $others")
+                log.debug("=============== SendMsg, msgName = $msgName, correlationKey = $correlationKey, others = $others")
             }
             .await()
         return@withJobHandling
@@ -49,7 +50,7 @@ class SystemWorkers(private val zeebe: ZeebeClient) {
         job: ActivatedJob
     ) = withJobHandling(jobClient, job) {
         val timeStr = LocalDateTime.now().format(pattern)
-        log.info("========== Instance '${job.bpmnProcessId}' with key '${job.processInstanceKey}' started at $timeStr")
+        log.debug("========== Instance '${job.bpmnProcessId}' with key '${job.processInstanceKey}' started at $timeStr")
 
         mapOf("startInstanceTime" to timeStr)
     }
@@ -62,9 +63,8 @@ class SystemWorkers(private val zeebe: ZeebeClient) {
     ) = withJobHandling(jobClient, job) {
         val time = LocalDateTime.now()
         val executionTime = Instant.now().toEpochMilli() - startInstanceTime.toInstant(ZoneOffset.UTC).toEpochMilli()
-        log.info("========== Instance '${job.bpmnProcessId}' with key '${job.processInstanceKey}' ended at $time. Execution time: $executionTime ms")
-        instancesDurationsMs[job.processInstanceKey] = executionTime
-        log.info("========== Average execution time: ${instancesDurationsMs.values.average()} ms")
+        log.debug("========== Instance '${job.bpmnProcessId}' with key '${job.processInstanceKey}' ended at $time. Execution time: $executionTime ms")
+        instancesDurationsMs.put(job.processInstanceKey, executionTime)
 
         return@withJobHandling
     }

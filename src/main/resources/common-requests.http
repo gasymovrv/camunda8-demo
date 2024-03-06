@@ -20,3 +20,16 @@ Content-Type: application/json
 
 ### Get topology
 GET http://localhost:8080/topology
+
+
+### Average execution-time
+GET http://localhost:8080/execution-time/average
+
+### Max execution-time
+GET http://localhost:8080/execution-time/max
+
+### Min execution-time
+GET http://localhost:8080/execution-time/min
+
+### Clear execution-time
+DELETE http://localhost:8080/execution-time
