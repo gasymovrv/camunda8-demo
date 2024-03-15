@@ -5,13 +5,14 @@ import io.camunda.zeebe.client.api.response.CompleteJobResponse
 import io.camunda.zeebe.client.api.response.FailJobResponse
 import io.camunda.zeebe.client.api.worker.JobClient
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 
 object ZeebeJobUtils {
-    private const val JOB_INFO_MSG = "jobKey: %d, processInstanceKey: %d"
-    private const val JOB_ERROR_MSG = "$JOB_INFO_MSG, error: %d"
+    private const val JOB_INFO_MSG = "jobKey: %s, processInstanceKey: %s"
+    private const val JOB_ERROR_MSG = "$JOB_INFO_MSG, error: %s"
     private const val LOG_PREFIX = "====="
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -110,7 +111,7 @@ object ZeebeJobUtils {
             // otherwise another job client can start new try without delay
             delay(5000)
         }
-        sendFailJob(e, client, job, remainRetries)
+        sendFailJob(e, client, job, remainRetries).await()
     }
 
     fun <T> withJobHandling(
@@ -120,13 +121,13 @@ object ZeebeJobUtils {
     ) = runBlocking {
         logStartJob(job)
         try {
-            sendCompleteJob(client, job, executeJobAction())
+            sendCompleteJob(client, job, executeJobAction()).await()
         } catch (e: RetryableJobException) {
             logJobError(job, e)
             failWithDelay(e, client, job)
         } catch (e: Exception) {
             logJobError(job, e)
-            sendJobError(e, client, job)
+            sendJobError(e, client, job).await()
         } finally {
             logEndJob(job)
         }

@@ -16,7 +16,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Component
-class Workers() {
+class Workers {
     val log: Logger = LoggerFactory.getLogger(javaClass)
 
     @JobWorker(type = "simple_task1", autoComplete = false)
