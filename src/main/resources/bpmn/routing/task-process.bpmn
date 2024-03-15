@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_0bqip20" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.20.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_0bqip20" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.21.0">
   <bpmn:process id="TASK_PROCESS" name="simple-process_01" isExecutable="true">
     <bpmn:startEvent id="StartEvent">
       <bpmn:outgoing>Flow_0mj668h</bpmn:outgoing>
@@ -9,13 +9,9 @@
       <bpmn:incoming>Flow_0u3nomi</bpmn:incoming>
       <bpmn:incoming>Flow_18l028p</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:serviceTask id="Activity_1pvanbr" name="Simple task 1">
+    <bpmn:serviceTask id="Activity_1pvanbr" name="Task way 1">
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="simple_task1" />
-        <zeebe:taskHeaders>
-          <zeebe:header key="json" value="{   &#34;id&#34;: &#34;1&#34;,   &#34;name&#34;: &#34;custom json&#34; }" />
-          <zeebe:header key="name" value="My simple task" />
-        </zeebe:taskHeaders>
+        <zeebe:taskDefinition type="TaskOne" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_09n6sh4</bpmn:incoming>
       <bpmn:outgoing>Flow_0u3nomi</bpmn:outgoing>
@@ -27,15 +23,15 @@
       <bpmn:outgoing>Flow_12u9qnd</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="Flow_09n6sh4" name="ONE" sourceRef="Gateway_021h9pq" targetRef="Activity_1pvanbr">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=registration_message="ONE"</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=registrationMessage="ONE"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_12u9qnd" name="TWO" sourceRef="Gateway_021h9pq" targetRef="Event_07l2tnn">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=registration_message="TWO"</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=registrationMessage="TWO"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_18l028p" sourceRef="Activity_09pe1tu" targetRef="EndEvent" />
-    <bpmn:serviceTask id="Activity_09pe1tu" name="Simple task 2">
+    <bpmn:serviceTask id="Activity_09pe1tu" name="Task way 2">
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="simple_task2" />
+        <zeebe:taskDefinition type="TaskTwo" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1xovxbn</bpmn:incoming>
       <bpmn:outgoing>Flow_18l028p</bpmn:outgoing>
@@ -52,7 +48,7 @@
       <zeebe:subscription correlationKey="=task_number" />
     </bpmn:extensionElements>
   </bpmn:message>
-  <bpmn:message id="Message_29avobo" name="MsgSimpleProcessEvent">
+  <bpmn:message id="Message_29avobo" name="END_TASK">
     <bpmn:extensionElements>
       <zeebe:subscription correlationKey="=key" />
     </bpmn:extensionElements>
@@ -74,6 +70,7 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0c3n388_di" bpmnElement="Activity_09pe1tu">
         <dc:Bounds x="530" y="190" width="100" height="80" />
+        <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1kxvenw_di" bpmnElement="Event_07l2tnn">
         <dc:Bounds x="402" y="212" width="36" height="36" />

@@ -187,5 +187,21 @@ class RoutingWorkers(
         log.info("=============== SlaWarn")
     }
 
+    @JobWorker(type = "TaskOne", autoComplete = false)
+    fun handleTaskOne(
+        jobClient: JobClient,
+        job: ActivatedJob,
+        @Variable processId: String
+    ) = withJobHandling(jobClient, job) {
+        log.info("=============== TaskOne")
+    }
 
+    @JobWorker(type = "TaskTwo", autoComplete = false)
+    fun handleTaskTwo(
+        jobClient: JobClient,
+        job: ActivatedJob,
+        @Variable processId: String
+    ) = withJobHandling(jobClient, job) {
+        log.info("=============== TaskTwo")
+    }
 }

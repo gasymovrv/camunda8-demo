@@ -50,7 +50,8 @@ Content-Type: application/json
   "msgName": "CREATE_TASK",
   "correlationKey": "{{processId1}}",
   "vars": {
-    "taskId": "{{processId1}}_1"
+    "taskId": "{{processId1}}_1",
+    "registrationMessage": "TWO"
   }
 }
 
