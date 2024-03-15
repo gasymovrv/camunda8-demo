@@ -104,27 +104,27 @@ object ZeebeJobUtils {
         e: Exception,
         client: JobClient,
         job: ActivatedJob
-    ) {
+    ): CompletableFuture<FailJobResponse> {
         val remainRetries = job.retries - 1
         if (remainRetries > 0) {
             // It is required to delay before sending fail,
             // otherwise another job client can start new try without delay
             delay(5000)
         }
-        sendFailJob(e, client, job, remainRetries).await()
+        return sendFailJob(e, client, job, remainRetries)
     }
 
     fun <T> withJobHandling(
         client: JobClient,
         job: ActivatedJob,
         executeJobAction: suspend () -> T
-    ) = runBlocking {
+    ): Unit = runBlocking {
         logStartJob(job)
         try {
             sendCompleteJob(client, job, executeJobAction()).await()
         } catch (e: RetryableJobException) {
             logJobError(job, e)
-            failWithDelay(e, client, job)
+            failWithDelay(e, client, job).await()
         } catch (e: Exception) {
             logJobError(job, e)
             sendJobError(e, client, job).await()
