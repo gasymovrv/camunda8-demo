@@ -1,0 +1,8 @@
+### Send message 'CLIENT_RESPONSE'
+POST http://localhost:8080/messages
+Content-Type: application/json
+
+{
+  "msgName": "CLIENT_RESPONSE",
+  "correlationKey": "{{processId1}}_client_req_1"
+}

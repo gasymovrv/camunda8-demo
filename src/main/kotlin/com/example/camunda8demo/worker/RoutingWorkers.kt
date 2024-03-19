@@ -103,7 +103,7 @@ class RoutingWorkers(
         return@withJobHandling
     }
 
-// Сделать по аналогии с handleSendPauseSlaMsg и handleSendResumeSlaMsg
+// TODO Сделать по аналогии с SendPauseSlaMsg и SendResumeSlaMsg
 
 //    @JobWorker(type = "ChangeSla", autoComplete = false)
 //    fun handleChangeSla(
@@ -150,6 +150,8 @@ class RoutingWorkers(
         mapOf("sla" to savedSla)
     }
 
+    // TODO Сделать по аналогии с SendPauseSlaMsg и SendResumeSlaMsg
+    //  если уйдем от success_condition то можно сделать просто CompleteSla
     @JobWorker(type = "CheckSla", autoComplete = false)
     fun handleCheckSla(
         jobClient: JobClient,

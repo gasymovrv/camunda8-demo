@@ -1,0 +1,11 @@
+### Send message 'END_TASK'
+POST http://localhost:8080/messages
+Content-Type: application/json
+
+{
+  "msgName": "END_TASK",
+  "correlationKey": "{{processId1}}_task_1",
+  "vars": {
+    "needToStartAgain": false
+  }
+}
