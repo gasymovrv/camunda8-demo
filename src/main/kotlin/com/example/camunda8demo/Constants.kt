@@ -1,6 +1,5 @@
 package com.example.camunda8demo
 
-import java.time.format.DateTimeFormatter
 
-
-val pattern: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+//val pattern: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+const val DATETIME_PATTERN: String = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"

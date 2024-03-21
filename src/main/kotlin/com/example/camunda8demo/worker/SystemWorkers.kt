@@ -1,6 +1,6 @@
 package com.example.camunda8demo.worker
 
-import com.example.camunda8demo.pattern
+import com.example.camunda8demo.DATETIME_PATTERN
 import com.example.camunda8demo.util.ZeebeJobUtils.withJobHandling
 import io.camunda.zeebe.client.ZeebeClient
 import io.camunda.zeebe.client.api.response.ActivatedJob
@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.ConcurrentHashMap
 
 @Component
@@ -49,7 +50,7 @@ class SystemWorkers(private val zeebe: ZeebeClient) {
         jobClient: JobClient,
         job: ActivatedJob
     ) = withJobHandling(jobClient, job) {
-        val timeStr = LocalDateTime.now().format(pattern)
+        val timeStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATETIME_PATTERN))
         log.debug("========== Instance '${job.bpmnProcessId}' with key '${job.processInstanceKey}' started at $timeStr")
 
         mapOf("startInstanceTime" to timeStr)

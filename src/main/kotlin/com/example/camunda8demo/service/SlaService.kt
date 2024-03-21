@@ -1,110 +1,137 @@
 package com.example.camunda8demo.service
 
-import com.example.camunda8demo.pattern
+import com.example.camunda8demo.DATETIME_PATTERN
 import com.example.camunda8demo.util.RetryableJobException
+import com.fasterxml.jackson.annotation.JsonFormat
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 @Service
 class SlaService {
     private val slaDatabase = ConcurrentHashMap<String, Sla>()
-    private val sla = 60L
-    private val recalcSla = 120L
+    private val slaStartWork = 120L
+    private val slaResolution = 600L
+    private val recalcSla = 720L
 
     fun get(id: String): Sla = slaDatabase[id] ?: throwNotFoundErr(id)
 
-    fun create(id: String): Sla {
+    fun create(): List<Sla> {
         val now = LocalDateTime.now(ZoneId.of("UTC"))
-        val warnDate = now.plusSeconds(sla / 2)
-        val expirationDate = now.plusSeconds(sla)
 
-        val savedSla = Sla(
-            id = id,
+        val id1 = UUID.randomUUID().toString()
+        val startWorkSla = Sla(
+            id = id1,
             status = SlaStatus.RUNNING,
-            warnDate = warnDate.format(pattern),
-            expirationDate = expirationDate.format(pattern),
-            startTime = LocalDateTime.now().format(pattern),
+            type = SlaType.START_WORK,
+            warnDate = now.plusSeconds(slaStartWork / 2),
+            expirationDate = now.plusSeconds(slaStartWork),
+            createdAt = now,
         )
-        slaDatabase.put(id, savedSla)
-        return savedSla
+
+        val id2 = UUID.randomUUID().toString()
+        val resolutionSla = Sla(
+            id = id2,
+            status = SlaStatus.RUNNING,
+            type = SlaType.RESOLUTION,
+            warnDate = now.plusSeconds(slaResolution / 2),
+            expirationDate = now.plusSeconds(slaResolution),
+            createdAt = now
+        )
+
+        slaDatabase.put(id1, startWorkSla)
+        slaDatabase.put(id2, resolutionSla)
+        return listOf(startWorkSla, resolutionSla)
     }
 
-    fun recalculate(id: String): Sla = slaDatabase.computeIfPresent(id) { k, v ->
-        if (v.status != SlaStatus.CHANGED) throw IllegalStateException("SLA '$v' must be in status CHANGED")
-        val spentMs = v.spentMs ?: throw IllegalStateException("SLA '$v' spentMs is null")
+    fun change(id: String): Sla = slaDatabase.computeIfPresent(id) { _, v ->
+        if (setOf(SlaStatus.EXPIRED, SlaStatus.COMPLETED).contains(v.status))
+            throw IllegalStateException("SLA '$v' is in wrong status for changing")
 
-        val warnDate = Instant.now().plusSeconds(recalcSla / 2).minusMillis(spentMs)
-        val expirationDate = Instant.now().plusSeconds(recalcSla).minusMillis(spentMs)
+        // если recalcSla < стартовой длительности и в результате даты будут ранее текущего времени, то схема просто сразу триггернет таймеры
+        val warnDate = v.createdAt.plusSeconds(recalcSla / 2).toInstant(ZoneOffset.UTC).plusMillis(v.sumPausedMs)
+        val expirationDate = v.createdAt.plusSeconds(recalcSla).toInstant(ZoneOffset.UTC).plusMillis(v.sumPausedMs)
 
-        Sla(
-            id = k,
-            status = SlaStatus.RUNNING,
-            warnDate = LocalDateTime.ofInstant(warnDate, ZoneId.of("UTC")).format(pattern),
-            expirationDate = LocalDateTime.ofInstant(expirationDate, ZoneId.of("UTC")).format(pattern),
-            startTime = LocalDateTime.now().format(pattern),
+        v.copy(
+            expirationDate = LocalDateTime.ofInstant(expirationDate, ZoneId.of("UTC")),
+            warnDate = LocalDateTime.ofInstant(warnDate, ZoneId.of("UTC"))
         )
     } ?: throwNotFoundErr(id)
 
-    fun complete(id: String): Sla = slaDatabase.computeIfPresent(id) { _, v -> v.copy(status = SlaStatus.COMPLETED) }
-        ?: throwNotFoundErr(id)
+    fun complete(id: String): Sla = slaDatabase.computeIfPresent(id) { _, v ->
+        if (setOf(SlaStatus.EXPIRED, SlaStatus.COMPLETED).contains(v.status))
+            throw IllegalStateException("SLA '$v' is in wrong status for completion")
+
+        v.copy(status = SlaStatus.COMPLETED)
+    } ?: throwNotFoundErr(id)
+
+    fun warn(id: String): Sla = slaDatabase.computeIfPresent(id) { _, v ->
+        if (v.status == SlaStatus.EXPIRED)
+            throw IllegalStateException("SLA '$v' is expired, cannot be warned again")
+
+        v.copy(status = SlaStatus.WARNING)
+    } ?: throwNotFoundErr(id)
 
     fun expire(id: String): Sla = slaDatabase.computeIfPresent(id) { _, v -> v.copy(status = SlaStatus.EXPIRED) }
         ?: throwNotFoundErr(id)
 
-    fun pause(id: String): Sla? = slaDatabase.computeIfPresent(id) { k, v ->
-        if (v.status == SlaStatus.PAUSED)
-            throw IllegalStateException("SLA '$v' already paused")
+    fun pause(id: String): Sla? = slaDatabase.computeIfPresent(id) { _, v ->
+        if (setOf(SlaStatus.PAUSED, SlaStatus.EXPIRED, SlaStatus.COMPLETED).contains(v.status))
+            throw IllegalStateException("SLA '$v' is in wrong status for pausing")
 
-        val expirationDate = v.expirationDate ?: throw IllegalStateException("SLA '$v' expirationDate is null")
-        val newExpirationDate = LocalDateTime.parse(expirationDate, pattern)
-        val remainingMs =
-            newExpirationDate.toInstant(ZoneOffset.UTC).toEpochMilli() - Instant.now().toEpochMilli()
-
-        Sla(
-            id = k,
+        v.copy(
             status = SlaStatus.PAUSED,
-            remainingMs = remainingMs
+            lastPausedAt = LocalDateTime.now()
         )
     } ?: throwRetryableNotFoundErr(id)
 
-    fun resume(id: String): Sla? = slaDatabase.computeIfPresent(id) { k, v ->
+    fun resume(id: String): Sla? = slaDatabase.computeIfPresent(id) { _, v ->
         if (v.status != SlaStatus.PAUSED)
-            throw IllegalStateException("SLA '$v' already resumed")
+            throw IllegalStateException("SLA '$v' is already resumed")
 
-        val remainingMs = v.remainingMs ?: throw IllegalStateException("SLA '$v' remainingMs is null")
-        val warnDate = Instant.now().plusMillis(remainingMs / 2)
-        val expirationDate = Instant.now().plusMillis(remainingMs)
+        val lastPausedAt = v.lastPausedAt ?: throw IllegalStateException("SLA '$v' pausedAt is null")
+        val lastPausedMs = Instant.now().toEpochMilli() - lastPausedAt.toInstant(ZoneOffset.UTC).toEpochMilli()
+        val warnDate = v.warnDate.toInstant(ZoneOffset.UTC).plusMillis(lastPausedMs)
+        val expirationDate = v.expirationDate.toInstant(ZoneOffset.UTC).plusMillis(lastPausedMs)
 
-        Sla(
-            id = k,
+        v.copy(
             status = SlaStatus.RUNNING,
-            warnDate = LocalDateTime.ofInstant(warnDate, ZoneId.of("UTC")).format(pattern),
-            expirationDate = LocalDateTime.ofInstant(expirationDate, ZoneId.of("UTC")).format(pattern),
-            startTime = LocalDateTime.now().format(pattern),
+            sumPausedMs = v.sumPausedMs + lastPausedMs,
+            expirationDate = LocalDateTime.ofInstant(expirationDate, ZoneId.of("UTC")),
+            warnDate = LocalDateTime.ofInstant(warnDate, ZoneId.of("UTC"))
         )
     } ?: throwRetryableNotFoundErr(id)
 
     private fun throwNotFoundErr(id: String): Nothing =
-        throw RetryableJobException("Not found SLA '$id', maybe it hasn't created yet")
+        throw IllegalStateException("Not found SLA '$id'")
 
     private fun throwRetryableNotFoundErr(id: String): Nothing =
-        throw IllegalStateException("Not found SLA '$id'")
+        throw RetryableJobException("Not found SLA '$id', maybe it hasn't created yet")
 }
 
 data class Sla(
-    var id: String,
-    var status: SlaStatus,
-    var expirationDate: String? = null,
-    var warnDate: String? = null,
-    var startTime: String? = null,
-    var remainingMs: Long? = null,
-    var spentMs: Long? = null,
+    val id: String,
+    val status: SlaStatus,
+    val type: SlaType,
+    @JsonFormat(pattern = DATETIME_PATTERN)
+    val expirationDate: LocalDateTime,
+    @JsonFormat(pattern = DATETIME_PATTERN)
+    val warnDate: LocalDateTime,
+    @JsonFormat(pattern = DATETIME_PATTERN)
+    val createdAt: LocalDateTime,
+    val sumPausedMs: Long = 0,
+    @JsonFormat(pattern = DATETIME_PATTERN)
+    val lastPausedAt: LocalDateTime? = null,
 )
 
 enum class SlaStatus {
-    RUNNING, PAUSED, EXPIRED, COMPLETED, CHANGED
+    RUNNING, PAUSED, WARNING, EXPIRED, COMPLETED
+}
+
+enum class SlaType {
+    START_WORK, RESOLUTION
 }
