@@ -20,7 +20,7 @@ class SlaService {
 
     fun get(id: String): Sla = slaDatabase[id] ?: throwNotFoundErr(id)
 
-    fun create(): List<Sla> {
+    fun createRouterSla(): List<Sla> {
         val now = LocalDateTime.now(ZoneId.of("UTC"))
 
         val id1 = UUID.randomUUID().toString()
@@ -46,6 +46,22 @@ class SlaService {
         slaDatabase.put(id1, startWorkSla)
         slaDatabase.put(id2, resolutionSla)
         return listOf(startWorkSla, resolutionSla)
+    }
+
+    fun createTaskSla(): List<Sla> {
+        val now = LocalDateTime.now(ZoneId.of("UTC"))
+
+        val id1 = UUID.randomUUID().toString()
+        val delaySla = Sla(
+            id = id1,
+            status = SlaStatus.RUNNING,
+            type = SlaType.DELAY,
+            expirationDate = now.plusSeconds(slaStartWork),
+            createdAt = now,
+        )
+
+        slaDatabase.put(id1, delaySla)
+        return listOf(delaySla)
     }
 
     fun change(id: String): Sla = slaDatabase.computeIfPresent(id) { _, v ->
@@ -95,7 +111,7 @@ class SlaService {
 
         val lastPausedAt = v.lastPausedAt ?: throw IllegalStateException("SLA '$v' pausedAt is null")
         val lastPausedMs = Instant.now().toEpochMilli() - lastPausedAt.toInstant(ZoneOffset.UTC).toEpochMilli()
-        val warnDate = v.warnDate.toInstant(ZoneOffset.UTC).plusMillis(lastPausedMs)
+        val warnDate = v.warnDate?.toInstant(ZoneOffset.UTC)?.plusMillis(lastPausedMs)
         val expirationDate = v.expirationDate.toInstant(ZoneOffset.UTC).plusMillis(lastPausedMs)
 
         v.copy(
@@ -120,7 +136,7 @@ data class Sla(
     @JsonFormat(pattern = DATETIME_PATTERN)
     val expirationDate: LocalDateTime,
     @JsonFormat(pattern = DATETIME_PATTERN)
-    val warnDate: LocalDateTime,
+    val warnDate: LocalDateTime? = null,
     @JsonFormat(pattern = DATETIME_PATTERN)
     val createdAt: LocalDateTime,
     val sumPausedMs: Long = 0,
@@ -133,5 +149,5 @@ enum class SlaStatus {
 }
 
 enum class SlaType {
-    START_WORK, RESOLUTION
+    START_WORK, RESOLUTION, DELAY
 }

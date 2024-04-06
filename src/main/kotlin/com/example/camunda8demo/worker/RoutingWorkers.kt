@@ -31,7 +31,7 @@ class RoutingWorkers(
         jobClient: JobClient,
         job: ActivatedJob
     ) = withJobHandling(jobClient, job) {
-        val savedSlaList = slaService.create()
+        val savedSlaList = slaService.createRouterSla()
         log.info("=============== CreateSlaList: $savedSlaList")
 
         mapOf(
@@ -226,6 +226,19 @@ class RoutingWorkers(
         job: ActivatedJob
     ) = withJobHandling(jobClient, job) {
         log.info("=============== TaskTwo")
+    }
+
+    /**
+     * Воркер схемы TASK_PROCESS
+     */
+    @JobWorker(type = "CreateTaskSla", autoComplete = false)
+    fun handleCreateTaskSla(
+        jobClient: JobClient,
+        job: ActivatedJob
+    ) = withJobHandling(jobClient, job) {
+        val savedSlaList = slaService.createTaskSla()
+        log.info("=============== CreateTaskSla: $savedSlaList")
+        mapOf("slaList" to savedSlaList)
     }
 
     /**

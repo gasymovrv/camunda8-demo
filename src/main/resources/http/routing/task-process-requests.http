@@ -4,8 +4,5 @@ Content-Type: application/json
 
 {
   "msgName": "END_TASK",
-  "correlationKey": "{{processId1}}_task_1",
-  "vars": {
-    "needToStartAgain": false
-  }
+  "correlationKey": "{{processId1}}_task_1"
 }
