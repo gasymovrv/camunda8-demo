@@ -78,6 +78,19 @@ class Controller(
             }
     }
 
+    @PostMapping("/jobs/{key}/retries")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun updateJobRetries(@PathVariable key: Long, @RequestBody request: UpdateRetriesRequest): CompletionStage<Void> {
+        return zeebe.newUpdateRetriesCommand(key)
+            .retries(request.retries)
+            .send()
+            .thenAccept {
+                println("Retries for job '$key' updated")
+            }.exceptionally {
+                error(it)
+            }
+    }
+
     @DeleteMapping("/process-definitions/{key}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteResource(@PathVariable key: Long): CompletionStage<Void> {
@@ -161,4 +174,8 @@ data class SendMessageRequest(
 
 data class DeployResourceRequest(
     val fileName: String
+)
+
+data class UpdateRetriesRequest(
+    val retries: Int
 )

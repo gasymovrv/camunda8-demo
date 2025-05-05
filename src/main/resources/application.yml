@@ -1,12 +1,12 @@
 server:
-  port: 8080
+  port: 8081
 
 zeebe:
   client:
     security:
       plaintext: true
     broker:
-      gateway-address: localhost:26500
+      grpc-address: ${ZEEBE_BROKER_ADDRESS:http://localhost:26500}
     worker:
       # For example, imagine you have 10 process instances and a single job worker configured with maxJobsActive = 3.
       # The job worker will first pull three jobs and begin executing them. The threshold to poll for new jobs is 1 (30% of 3 rounded up).
@@ -28,3 +28,7 @@ springdoc:
   swagger-ui:
     enabled: ${ENABLE_SWAGGER:true}
     path: /swagger-ui
+
+logging:
+  level:
+    io.camunda.zeebe.client.impl.ZeebeCallCredentials: ERROR

@@ -45,3 +45,12 @@ Content-Type: application/json
     "simple_process_var": "simple process var 05-01"
   }
 }
+
+### Send message 'MsgSimpleProcessEvent'
+POST http://localhost:8081/messages
+Content-Type: application/json
+
+{
+  "msgName": "MsgTaskCompleteExternally",
+  "correlationKey": "29ef8a7a-73a2-45a5-a55c-1c7fda3ede83"
+}Json

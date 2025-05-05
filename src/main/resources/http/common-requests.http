@@ -1,16 +1,25 @@
 ### Cancel instance
-POST http://localhost:8080/processes/2251799813685425/cancel
+POST http://localhost:8081/processes/11258999068466982/cancel
+
+### Update job retries
+POST http://localhost:8081/jobs/11258999068507741/retries
+Content-Type: application/json
+
+{
+  "retries": 3
+}
+
 
 ### Resolve incident
-POST http://localhost:8080/incidents/2251799813686438/resolve
+POST http://localhost:8081/incidents/11258999068507747/resolve
 
 
 ### Delete process definition
-DELETE http://localhost:8080/process-definitions/2251799813685249
+DELETE http://localhost:8081/process-definitions/2251799813685249
 
 
 ### Deploy process definition
-POST http://localhost:8080/process-definitions
+POST http://localhost:8081/process-definitions
 Content-Type: application/json
 
 {
@@ -19,17 +28,17 @@ Content-Type: application/json
 
 
 ### Get topology
-GET http://localhost:8080/topology
+GET http://localhost:8081/topology
 
 
 ### Average execution-time
-GET http://localhost:8080/execution-time/average
+GET http://localhost:8081/execution-time/average
 
 ### Max execution-time
-GET http://localhost:8080/execution-time/max
+GET http://localhost:8081/execution-time/max
 
 ### Min execution-time
-GET http://localhost:8080/execution-time/min
+GET http://localhost:8081/execution-time/min
 
 ### Clear execution-time
-DELETE http://localhost:8080/execution-time
+DELETE http://localhost:8081/execution-time

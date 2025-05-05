@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.1.5</version>
+        <version>3.2.12</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
@@ -18,14 +18,9 @@
 
     <properties>
         <java.version>21</java.version>
-        <kotlin.version>1.9.20</kotlin.version>
-        <springdoc-openapi.version>2.2.0</springdoc-openapi.version>
-
-        <!-- TODO Update, latest version is here: https://github.com/camunda-community-hub/spring-zeebe -->
-        <camunda-starter.version>8.2.1</camunda-starter.version>
-        <!--Zeebe, this version will override version of transitive dependency in camunda-starter-->
-        <!--It was defined because zeebe-client-java version from camunda-starter did not match our zeebe core version-->
-        <zeebe.version>8.2.5</zeebe.version>
+        <kotlin.version>2.1.0</kotlin.version>
+        <springdoc-openapi.version>2.5.0</springdoc-openapi.version>
+        <zeebe.version>8.5.15</zeebe.version>
 
     </properties>
 
@@ -37,9 +32,9 @@
             <version>${zeebe.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.camunda.spring</groupId>
-            <artifactId>spring-boot-starter-camunda</artifactId>
-            <version>${camunda-starter.version}</version>
+            <groupId>io.camunda</groupId>
+            <artifactId>spring-boot-starter-camunda-sdk</artifactId>
+            <version>${zeebe.version}</version>
         </dependency>
 
         <dependency>

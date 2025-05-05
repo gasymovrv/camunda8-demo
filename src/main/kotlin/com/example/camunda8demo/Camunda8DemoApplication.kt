@@ -1,6 +1,5 @@
 package com.example.camunda8demo
 
-import io.camunda.zeebe.spring.client.annotation.Deployment
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.scheduling.annotation.EnableAsync
@@ -8,7 +7,7 @@ import org.springframework.scheduling.annotation.EnableAsync
 @EnableAsync
 @SpringBootApplication
 //@Deployment(resources = ["classpath:/bpmn/**/*.bpmn"])
-@Deployment(resources = ["classpath:/bpmn/routing/*.bpmn"])
+//@Deployment(resources = ["classpath:/bpmn/routing/*.bpmn"])
 class Camunda8DemoApplication
 
 fun main(args: Array<String>) {
